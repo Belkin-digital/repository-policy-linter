@@ -1,3 +1,8 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # Расположение проекта
 
 Рабочий Git-репозиторий размещён в:
@@ -10,4 +15,5 @@
 
 Отчёт реализации, контрольные суммы и task-only patch AF-PM также сохранены
 в `docs/delivery/`. Пакеты находятся в `dist/` и исключены из Git, исходники
-и skill — в `src/` и `skills/`. GitHub remote пока не создан.
+и skill — в `src/` и `skills/`. Публичный GitHub-репозиторий:
+[Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).

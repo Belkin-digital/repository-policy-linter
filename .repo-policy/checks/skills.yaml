@@ -1,0 +1,18 @@
+version: 2
+rules:
+- id: skill-metadata
+  kind: frontmatter
+  files:
+  - skills/**/SKILL.md
+  keys:
+  - name
+  - description
+- id: skill-dates
+  kind: frontmatter
+  files:
+  - skills/**/SKILL.md
+  mapping_path:
+  - metadata
+  keys:
+  - created
+  - updated

@@ -47,7 +47,8 @@ class EngineTests(unittest.TestCase):
 
     def config(self, rules=(), **extra):
         return self.put(
-            ".repo-policy.yaml", yaml.safe_dump({"version": 1, "rules": list(rules), **extra})
+            ".repo-policy/policy.yaml",
+            yaml.safe_dump({"version": 2, "rules": list(rules), **extra}),
         )
 
     def rule(self, kind, **options):
@@ -198,8 +199,9 @@ class EngineTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "posix", "symlink privileges vary on Windows")
     def test_config_symlink_rejected(self):
         outside = Path(self.temporary.name) / "config"
-        outside.write_text("version: 1\n")
-        (self.root / ".repo-policy.yaml").symlink_to(outside)
+        outside.write_text("version: 2\n")
+        (self.root / ".repo-policy").mkdir()
+        (self.root / ".repo-policy/policy.yaml").symlink_to(outside)
         with self.assertRaises(PolicyError):
             run(self.root)
 
@@ -227,7 +229,7 @@ class EngineTests(unittest.TestCase):
 
     def test_json_yaml_syntax_duplicates_aliases_and_no_source_excerpt(self):
         self.config(
-            [self.rule("syntax", files=["*.json", "*.yaml"], exclude=[".repo-policy.yaml"])]
+            [self.rule("syntax", files=["*.json", "*.yaml"], exclude=[".repo-policy/policy.yaml"])]
         )
         for name, content in [
             ("a.json", '{"x":1,"x":2}'),
@@ -253,34 +255,115 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(len(report["diagnostics"]), 1)
         self.assertIn("status", report["diagnostics"][0]["message"])
 
+    def test_frontmatter_nested_mapping_requires_both_date_keys(self):
+        self.config(
+            [
+                self.rule(
+                    "frontmatter",
+                    files=["*.md"],
+                    mapping_path=["metadata"],
+                    keys=["created", "updated"],
+                )
+            ]
+        )
+        path = self.put(
+            "SKILL.md",
+            "---\nname: example\nmetadata:\n  created: 2026-10-26\n  updated: 2026-10-26\n---\nBody\n",
+        )
+        self.assertEqual(run(self.root)["exit_code"], 0)
+        path.write_text(
+            "---\ncreated: 2026-10-26\nupdated: 2026-10-26\nmetadata:\n  created: 2026-10-26\n---\nBody\n"
+        )
+        report = run(self.root)
+        self.assertEqual(report["exit_code"], 1)
+        self.assertIn("updated", report["diagnostics"][0]["message"])
+        for value in ("null", "wrong-type", "[]"):
+            path.write_text(f"---\nmetadata: {value}\n---\nBody\n")
+            self.assertEqual(run(self.root)["exit_code"], 1)
+        path.write_text("---\nname: example\n---\nBody\n")
+        self.assertIn("missing frontmatter mapping", run(self.root)["diagnostics"][0]["message"])
+
+    def test_frontmatter_mapping_path_preserves_literal_key_contract(self):
+        self.config([self.rule("frontmatter", files=["*.md"], keys=["metadata.created"])])
+        path = self.put("doc.md", "---\nmetadata:\n  created: 2026-10-26\n---\nBody\n")
+        self.assertEqual(run(self.root)["exit_code"], 1)
+        path.write_text("---\nmetadata.created: 2026-10-26\n---\nBody\n")
+        self.assertEqual(run(self.root)["exit_code"], 0)
+        self.config(
+            [
+                self.rule(
+                    "frontmatter",
+                    files=["*.md"],
+                    mapping_path=["a", "b"],
+                    keys=["created", "updated"],
+                )
+            ]
+        )
+        path.write_text(
+            "---\na:\n  b:\n    created: 2026-10-26\n    updated: 2026-10-26\n---\nBody\n"
+        )
+        self.assertEqual(run(self.root)["exit_code"], 0)
+
+    def test_frontmatter_nested_policy_has_identical_af_report(self):
+        self.config(
+            [
+                self.rule(
+                    "frontmatter",
+                    files=["*.md"],
+                    mapping_path=["metadata"],
+                    keys=["created", "updated"],
+                )
+            ]
+        )
+        self.put("SKILL.md", "---\nmetadata:\n  created: '2026-10-26'\n---\nBody\n")
+        expected = run(self.root)
+        self.assertEqual(expected["exit_code"], 1)
+        session = Path(self.temporary.name)
+        output = session / "runs/dates/output"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = af_main(
+                [
+                    "--root",
+                    str(self.root),
+                    "--session-root",
+                    str(session),
+                    "--output-dir",
+                    str(output),
+                ]
+            )
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads((output / "report.json").read_text()), expected)
+
     def test_invalid_configs_exit_two(self):
         invalid = [
-            "version: 2\n",
-            "version: 1\nversion: 1\n",
-            "version: 1\nunknown: true\n",
-            "version: 1\nrules: true\n",
-            "version: 1\nrules: [{id: x, kind: typo}]\n",
-            "version: 1\nrules: [{id: x, kind: forbidden-text, pattern: '['}]\n",
-            "version: 1\nrules: [{id: x, kind: final-newline, safe_fix: 'yes'}]\n",
-            "version: 1\nrules: [{id: x, kind: required-path, path: ../x}]\n",
-            "version: 1\nrules: [{id: x, kind: syntax}, {id: x, kind: syntax}]\n",
-            "version: 1\nexceptions: [{rule: absent, files: ['*'], reason: why}]\n",
-            "version: 1\nrules: [{id: x, kind: []}]\n",
-            "version: 1\nexceptions: [{rule: [], files: ['*'], reason: why}]\n",
+            "version: 99\n",
+            "version: 2\nversion: 2\n",
+            "version: 2\nunknown: true\n",
+            "version: 2\nrules: true\n",
+            "version: 2\nrules: [{id: x, kind: typo}]\n",
+            "version: 2\nrules: [{id: x, kind: forbidden-text, pattern: '['}]\n",
+            "version: 2\nrules: [{id: x, kind: final-newline, safe_fix: 'yes'}]\n",
+            "version: 2\nrules: [{id: x, kind: required-path, path: ../x}]\n",
+            "version: 2\nrules: [{id: x, kind: syntax}, {id: x, kind: syntax}]\n",
+            "version: 2\nexceptions: [{rule: absent, files: ['*'], reason: why}]\n",
+            "version: 2\nrules: [{id: x, kind: []}]\n",
+            "version: 2\nexceptions: [{rule: [], files: ['*'], reason: why}]\n",
+            "version: 2\nrules: [{id: x, kind: frontmatter, mapping_path: metadata}]\n",
+            "version: 2\nrules: [{id: x, kind: frontmatter, mapping_path: [null]}]\n",
         ]
         for content in invalid:
             with self.subTest(config=content):
-                self.put(".repo-policy.yaml", content)
+                self.put(".repo-policy/policy.yaml", content)
                 code, output = self.cli(["check", "--root", str(self.root), "--format", "json"])
                 self.assertEqual(code, 2)
                 self.assertEqual(json.loads(output)["exit_code"], 2)
 
     def test_large_config_and_unsafe_yaml_are_rejected(self):
         for content in (
-            "version: 1\n#" + "x" * 1_048_576,
+            "version: 2\n#" + "x" * 1_048_576,
             "!!python/object/apply:os.system ['echo unsafe']\n",
         ):
-            self.put(".repo-policy.yaml", content)
+            self.put(".repo-policy/policy.yaml", content)
             with self.assertRaises(PolicyError):
                 run(self.root)
 
@@ -321,9 +404,9 @@ class EngineTests(unittest.TestCase):
     def test_init_never_overwrites_and_explain(self):
         code, _ = self.cli(["init", "--root", str(self.root)])
         self.assertEqual(code, 0)
-        before = (self.root / ".repo-policy.yaml").read_bytes()
+        before = (self.root / ".repo-policy/policy.yaml").read_bytes()
         self.assertEqual(self.cli(["init", "--root", str(self.root)])[0], 2)
-        self.assertEqual((self.root / ".repo-policy.yaml").read_bytes(), before)
+        self.assertEqual((self.root / ".repo-policy/policy.yaml").read_bytes(), before)
         self.assertEqual(self.cli(["explain", "readme", "--root", str(self.root)])[0], 0)
         self.assertEqual(self.cli(["explain", "syntax"])[0], 0)
 
@@ -461,17 +544,73 @@ class EngineTests(unittest.TestCase):
         self.init_git()
         engine = "repository-policy-linter==" + __version__
         configure(self.root, engine)
-        self.assertFalse((self.root / ".repo-policy.yaml").exists())
+        self.assertFalse((self.root / ".repo-policy/policy.yaml").exists())
         self.put("AGENTS.md", "Existing instructions.\n")
         configure(self.root, engine, True, "AGENTS.md")
-        first = {p.name: p.read_bytes() for p in self.root.iterdir() if p.is_file()}
+        first = {
+            p.relative_to(self.root).as_posix(): p.read_bytes()
+            for p in self.root.rglob("*")
+            if p.is_file() and ".git" not in p.parts
+        }
         configure(self.root, engine, True, "AGENTS.md")
         self.assertEqual(
-            first, {p.name: p.read_bytes() for p in self.root.iterdir() if p.is_file()}
+            first,
+            {
+                p.relative_to(self.root).as_posix(): p.read_bytes()
+                for p in self.root.rglob("*")
+                if p.is_file() and ".git" not in p.parts
+            },
         )
-        self.put(".repo-policy.yaml", "version: 1\n# custom policy\nrules: []\n")
+        self.put(".repo-policy/policy.yaml", "version: 2\n# custom policy\nrules: []\n")
         configure(self.root, engine, True)
-        self.assertIn("custom policy", (self.root / ".repo-policy.yaml").read_text())
+        self.assertIn("custom policy", (self.root / ".repo-policy/policy.yaml").read_text())
+
+    def test_setup_preserves_custom_bundle_without_injecting_undeclared_registry(self):
+        self.init_git()
+        policy = self.put(".repo-policy/policy.yaml", "version: 2\nrules: []\n")
+        before = policy.read_bytes()
+        configure(self.root, "repository-policy-linter==" + __version__, True)
+        self.assertEqual(policy.read_bytes(), before)
+        self.assertFalse((self.root / ".repo-policy/checks/common.yaml").exists())
+        self.assertEqual(run(self.root)["exit_code"], 0)
+
+    def test_setup_refuses_incomplete_policy_directory_before_writing(self):
+        self.init_git()
+        custom = self.put(".repo-policy/readme/notes.md", "User content\n")
+        with self.assertRaisesRegex(ValueError, "no manifest"):
+            configure(self.root, "repository-policy-linter==" + __version__, True)
+        self.assertEqual(custom.read_text(), "User content\n")
+        self.assertFalse((self.root / ".repo-policy/policy.yaml").exists())
+
+    def test_setup_accepts_markdown_extra_and_preserves_existing_base_pin(self):
+        self.init_git()
+        base = "repository-policy-linter==" + __version__
+        extra = "repository-policy-linter[markdown]==" + __version__
+        configure(self.root, extra, True)
+        requirements = self.root / ".repo-policy/requirements.txt"
+        self.assertEqual(requirements.read_text(), extra + "\n")
+        first = requirements.read_bytes()
+        configure(self.root, extra, True)
+        self.assertEqual(requirements.read_bytes(), first)
+        requirements.write_text(base + "\n")
+        result = configure(self.root, extra, True)
+        self.assertEqual(requirements.read_text(), base + "\n")
+        self.assertFalse(
+            next(
+                a
+                for a in result["actions"]
+                if a["file"] == requirements.relative_to(self.root).as_posix()
+            )["matches"]
+        )
+        wheel = (
+            "repository-policy-linter[markdown] @ https://example.invalid/engine.whl#sha256="
+            + "a" * 64
+        )
+        requirements.unlink()
+        configure(self.root, wheel, True)
+        self.assertEqual(requirements.read_text(), wheel + "\n")
+        with self.assertRaises(ValueError):
+            configure(self.root, "repository-policy-linter[unknown]==" + __version__)
 
     @unittest.skipUnless(os.name == "posix", "symlink privileges vary on Windows")
     def test_setup_preserves_symlink_instructions_and_rejects_unpinned_source(self):
@@ -480,7 +619,7 @@ class EngineTests(unittest.TestCase):
         (self.root / "CLAUDE.md").symlink_to("AGENTS.md")
         with self.assertRaises(ValueError):
             configure(self.root, "repository-policy-linter==0.1.0", True, "CLAUDE.md")
-        self.assertFalse((self.root / ".repo-policy.yaml").exists())
+        self.assertFalse((self.root / ".repo-policy/policy.yaml").exists())
         for bad in [
             "repository-policy-linter",
             "--index-url http://evil",

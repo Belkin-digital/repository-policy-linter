@@ -13,18 +13,31 @@ END = "<!-- repo-policy:end -->"
 SECTION = """<!-- repo-policy:begin -->
 ## Repository policy
 
-Install the exact tool dependency from `.repo-policy-requirements.txt` in an isolated
+Install the exact tool dependency from `.repo-policy/requirements.txt` in an isolated
 environment. Run `repo-policy check --all` before completion and `repo-policy check --changed`
-while editing. `.repo-policy.yaml` is the policy source for local agents and platform runners.
+while editing. [.repo-policy/policy.yaml](.repo-policy/policy.yaml) is the policy entrypoint.
+Before editing artifacts, read `repo_policy_contracts` in the scope's README/AGENTS frontmatter.
+Resolve ID to `.repo-policy/contracts/<id>.yaml` and optional `.repo-policy/readme/<id>.md`,
+or run `repo-policy explain <id>`. Contract selectors remain authoritative.
 Review configured external commands before passing `--allow-plugins`.
+For a commit, run `repo-policy check --commit <SHA> --format json`. Exit 0 covers machine checks.
+The current harness must dispatch every `review_requests` entry to a separate read-only subagent
+with the matching snapshot, full contract and listed rubrics. Verify input hashes and save each
+request/verdict at `<run-directory>/repo-policy/reviews/<request_id>.json`, outside tracked files.
+Require per-criterion evidence and `pass`, `needs_changes` or `blocked`; the main agent fixes
+issues, reruns checks and requests fresh reviews. Reuse no mismatched request IDs. After three
+unsuccessful iterations, report remaining criteria; unavailable reviewers leave acceptance blocked.
+Contract/rubric changes can require reviewing unchanged artifacts too. Acceptance requires both
+machine success and current passing verdicts for every request; the linter never grades rubrics.
 <!-- repo-policy:end -->
 """
 
 
 def requirement(value):
-    if re.fullmatch(r"repository-policy-linter==[0-9]+\.[0-9]+\.[0-9]+", value):
+    package = r"repository-policy-linter(?:\[markdown\])?"
+    if re.fullmatch(package + r"==[0-9]+\.[0-9]+\.[0-9]+", value):
         return value
-    match = re.fullmatch(r"repository-policy-linter @ (\S+)#sha256=([0-9a-f]{64})", value)
+    match = re.fullmatch(package + r" @ (\S+)#sha256=([0-9a-f]{64})", value)
     if not match:
         raise ValueError("engine must be an exact version or a wheel URL with #sha256=...")
     url = urlsplit(match[1])
@@ -64,11 +77,21 @@ def configure(root, engine, apply=False, instructions=None):
     if Path(found.stdout.strip()).resolve() != root:
         raise ValueError("target must be a Git repository root")
     engine = requirement(engine)
-    asset = Path(__file__).resolve().parents[1] / "assets/repo-policy.yaml"
-    proposed = {
-        ".repo-policy.yaml": asset.read_text(),
-        ".repo-policy-requirements.txt": engine + "\n",
-    }
+    assets = Path(__file__).resolve().parents[1] / "assets/policy"
+    proposed = {}
+    manifest = inside(root, ".repo-policy/policy.yaml")
+    if manifest.exists():
+        # Adding an undeclared module to an existing bundle would break system validation.
+        proposed[".repo-policy/policy.yaml"] = (assets / "policy.yaml").read_text()
+    else:
+        directory = inside(root, ".repo-policy")
+        if directory.exists() and (not directory.is_dir() or any(directory.iterdir())):
+            raise ValueError("existing policy directory has no manifest; reconcile manually")
+        for asset in sorted(assets.rglob("*")):
+            if asset.is_file():
+                name = ".repo-policy/" + asset.relative_to(assets).as_posix()
+                proposed[name] = asset.read_text()
+    proposed[".repo-policy/requirements.txt"] = engine + "\n"
     actions, writes = [], []
     for name, content in proposed.items():
         path = inside(root, name)
@@ -95,6 +118,7 @@ def configure(root, engine, apply=False, instructions=None):
             actions.append({"file": instructions, "action": "append"})
     if apply:
         for path, content, create in writes:
+            path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("x" if create else "w", encoding="utf-8", newline="\n") as stream:
                 stream.write(content)
     return {

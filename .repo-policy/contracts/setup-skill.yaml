@@ -1,0 +1,11 @@
+contract_version: 1
+id: setup-skill
+files:
+- skills/**/SKILL.md
+entrypoints:
+- skills/AGENTS.md
+criteria:
+- id: metadata
+  rule: skill-metadata
+- id: dates
+  rule: skill-dates

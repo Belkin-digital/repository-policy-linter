@@ -56,10 +56,11 @@ def _names(raw):
 
 
 def select_files(root, config, mode="all", base=None, explicit=None):
-    if explicit:
+    if explicit is not None:
         candidates = set(explicit)
-        for name in candidates:
-            safe_path(root, name)
+        if mode != "commit":
+            for name in candidates:
+                safe_path(root, name)
     elif mode == "changed":
         if not is_git_root(root):
             raise PolicyError("--changed requires --root to be the Git repository root")

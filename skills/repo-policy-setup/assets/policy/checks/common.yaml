@@ -1,8 +1,4 @@
-version: 1
-exclude:
-  - dist/**
-  - build/**
-  - .venv-policy/**
+version: 2
 rules:
   - id: readme
     kind: required-path
@@ -11,4 +7,8 @@ rules:
   - id: data-syntax
     kind: syntax
     files: ['**/*.json', '**/*.yaml', '**/*.yml']
+  - id: text-newline
+    kind: final-newline
+    files: ['**/*.py', '**/*.md', '**/*.yaml', '**/*.yml', '**/*.json', '**/*.txt']
+    safe_fix: true
 plugins: []

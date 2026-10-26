@@ -1,0 +1,12 @@
+contract_version: 1
+id: documentation
+files:
+- '**/*.md'
+exclude:
+- skills/**/SKILL.md
+entrypoints:
+- AGENTS.md
+- docs/README.md
+criteria:
+- id: dates
+  rule: markdown-dates

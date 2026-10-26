@@ -104,6 +104,23 @@ def check_text(rule, name, text):
                     column,
                 )
             ]
+        if kind == "frontmatter" and rule.get("mapping_path"):
+            walked = []
+            for key in rule["mapping_path"]:
+                walked.append(key)
+                if not isinstance(data, dict) or key not in data:
+                    return [
+                        diagnostic(rule, name, "missing frontmatter mapping: " + ".".join(walked))
+                    ]
+                data = data[key]
+            if not isinstance(data, dict):
+                return [
+                    diagnostic(
+                        rule,
+                        name,
+                        "expected frontmatter mapping: " + ".".join(rule["mapping_path"]),
+                    )
+                ]
         if kind != "syntax":
             missing = [
                 k for k in rule.get("keys", []) if not isinstance(data, dict) or k not in data

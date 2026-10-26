@@ -6,6 +6,14 @@ import yaml
 from .model import PolicyError
 
 LIMIT = 1_048_576
+CONFIG_NAME = ".repo-policy/policy.yaml"
+POLICY_VERSION = 2
+SYSTEM_CHECKS = {
+    "system-policy-structure": "Validate the policy directory and all declared local resources.",
+    "system-unique-ids": "Require unique check/contract IDs and criterion IDs within a contract.",
+    "system-contract-navigation": "Validate contract IDs in declared README/AGENTS entrypoints.",
+    "system-contract-review": "Generate hashed rubric review requests for the current harness.",
+}
 KINDS = {
     "required-path": "Require a literal file or directory, in every selection mode.",
     "forbidden-path": "Reject matching selected paths.",
@@ -16,11 +24,18 @@ KINDS = {
     "syntax": "Parse JSON or YAML using their existing parsers; reject duplicate keys.",
     "required-keys": "Require top-level mapping keys in JSON or YAML.",
     "frontmatter": "Require YAML frontmatter and selected keys in Markdown/specifications.",
+    "markdown-reachable": "Require Markdown files to be reachable from explicit local entrypoints.",
 }
-DEFAULT_CONFIG = """version: 1
+DEFAULT_CONFIG = """version: 2
+registries: ['.repo-policy/checks/common.yaml']
+checks: [readme, data-syntax, text-newline]
+contracts: []
 exclude:
   - dist/**
   - build/**
+  - .venv-policy/**
+"""
+DEFAULT_REGISTRY = """version: 2
 rules:
   - id: readme
     kind: required-path
@@ -101,7 +116,7 @@ def number(value, context, maximum=LIMIT):
         raise PolicyError(f"{context}: expected integer 1..{maximum}")
 
 
-def load_config(path):
+def read_config(path):
     try:
         with path.open("rb") as stream:
             raw = stream.read(LIMIT + 1)
@@ -110,7 +125,6 @@ def load_config(path):
         config = yaml_load(raw.decode("utf-8"))
     except (OSError, UnicodeError, ValueError, yaml.YAMLError, RecursionError) as exc:
         raise PolicyError(f"cannot parse config {path.name}: {type(exc).__name__}") from exc
-    validate(config)
     return config
 
 
@@ -118,8 +132,8 @@ def validate(config):
     keys(
         config, {"version", "exclude", "exceptions", "rules", "plugins", "max_file_bytes"}, "config"
     )
-    if type(config.get("version")) is not int or config["version"] != 1:
-        raise PolicyError("config.version must be 1")
+    if type(config.get("version")) is not int or config["version"] != POLICY_VERSION:
+        raise PolicyError(f"config.version must be {POLICY_VERSION}")
     patterns(config.get("exclude", []), "exclude")
     number(config.get("max_file_bytes", LIMIT), "max_file_bytes", 100 * LIMIT)
     ids = set()
@@ -133,8 +147,8 @@ def validate(config):
         identifier = entry.get("id")
         if not isinstance(identifier, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", identifier):
             raise PolicyError("rule/plugin ids must match [a-z][a-z0-9-]{0,63}")
-        if identifier in ids or identifier == "engine":
-            raise PolicyError(f"duplicate or reserved id: {identifier}")
+        if identifier in ids or identifier == "engine" or identifier.startswith("system-"):
+            raise PolicyError(f"system-unique-ids: duplicate or reserved id: {identifier}")
         ids.add(identifier)
         if entry.get("severity", "error") not in ("error", "warning", "info"):
             raise PolicyError(f"{identifier}: invalid severity")
@@ -152,7 +166,8 @@ def validate(config):
             "max-bytes": {"bytes"},
             "syntax": set(),
             "required-keys": {"keys"},
-            "frontmatter": {"keys"},
+            "frontmatter": {"keys", "mapping_path"},
+            "markdown-reachable": {"roots"},
         }
         if not isinstance(kind, str) or kind not in KINDS:
             raise PolicyError(f"{rule['id']}: unknown rule kind")
@@ -176,6 +191,19 @@ def validate(config):
             number(rule.get("bytes"), "max-bytes.bytes", 1024 * LIMIT)
         if kind in ("required-keys", "frontmatter"):
             strings(rule.get("keys", []), "keys")
+        if kind == "frontmatter":
+            strings(rule.get("mapping_path", []), "frontmatter.mapping_path")
+        if kind == "markdown-reachable":
+            roots = rule.get("roots")
+            strings(roots, "markdown-reachable.roots", nonempty=True)
+            if len(roots) != len(set(roots)):
+                raise PolicyError("markdown-reachable.roots must be unique")
+            for root in roots:
+                relative(root, "markdown-reachable.roots")
+                if root != PurePosixPath(root).as_posix():
+                    raise PolicyError("markdown-reachable roots must use canonical paths")
+                if not root.lower().endswith((".md", ".markdown")):
+                    raise PolicyError("markdown-reachable roots must be Markdown files")
     for plugin in plugins:
         keys(
             plugin,

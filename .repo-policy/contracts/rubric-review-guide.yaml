@@ -1,0 +1,11 @@
+contract_version: 1
+id: rubric-review-guide
+files:
+- docs/rubric-review.md
+entrypoints:
+- docs/README.md
+criteria:
+- id: implementation-accuracy
+  rubric: .repo-policy/rubrics/review-guide-accuracy.md
+- id: reproducible-handoff
+  rubric: .repo-policy/rubrics/review-guide-handoff.md

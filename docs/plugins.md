@@ -1,3 +1,8 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # External tool plugins
 
 The engine routes file sets and normalizes diagnostics. It never installs tools at check time,
@@ -8,7 +13,7 @@ flags. Review executable paths, options, native configs and dependency locks bef
 Real Ruff integration (Ruff retains all Python analysis logic):
 
 ```yaml
-version: 1
+version: 2
 plugins:
   - id: python-ruff
     command: [ruff, check, --no-fix, --output-format, json, '{files}']

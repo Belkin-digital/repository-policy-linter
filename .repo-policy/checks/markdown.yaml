@@ -1,0 +1,22 @@
+version: 2
+rules:
+- id: markdown-dates
+  kind: frontmatter
+  files:
+  - '**/*.md'
+  exclude:
+  - skills/**/SKILL.md
+  keys:
+  - created
+  - updated
+- id: markdown-navigation
+  kind: markdown-reachable
+  files:
+  - '**/*.md'
+  roots:
+  - AGENTS.md
+- id: claude-shared-instructions
+  kind: required-text
+  files:
+  - CLAUDE.md
+  pattern: ^@AGENTS\.md$

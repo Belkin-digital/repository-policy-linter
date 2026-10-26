@@ -1,6 +1,13 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # Release and versioning
 
-Version 0.1.0 is built locally; no registry name ownership or remote release is assumed.
+Version 0.1.0 source is available in the public
+[GitHub repository](https://github.com/Belkin-digital/repository-policy-linter).
+Wheels are built locally; no registry name ownership or package release is assumed.
 The package metadata version and `repo_policy.__version__` must match. CLI `--version` prints it;
 reports carry engine/config/diagnostic schema versions. SemVer applies to the package; a breaking
 config/diagnostic schema requires a new explicit schema version, not silent reinterpretation.

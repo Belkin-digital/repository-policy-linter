@@ -1,3 +1,8 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # Agent Factory: inspected integration and compatibility plan
 
 Inspected on **2026-10-26**, from local AF-PM and backend source, not guessed from a generic
@@ -41,7 +46,7 @@ HEAD `6e302aa43cfe88a1eb3ae26c352de46547fcbbe1`.
 ## Implemented adapter
 
 `repo-policy-af` is a **Runner-side CLI bridge**. The engine is installed in the Runner image/tool
-environment as a pinned dependency. The same `.repo-policy.yaml`, engine and plugin toolchain
+environment as a pinned dependency. The same `.repo-policy/` bundle, engine and plugin toolchain
 stay in use. It checks the explicitly selected checkout and emits the same diagnostic JSON as
 `repo-policy check`; tests assert report equality. It does not require an LLM subscription.
 
@@ -55,6 +60,17 @@ session root can be specified explicitly; the bridge translates the output path 
 It writes `report.json` and `outputs.fragment.json`, returns the engine status, preserves symlink
 boundaries and refuses existing output files. For configuration failures it still writes an error
 report when a valid output directory is available.
+
+The policy bundle includes explicitly registered check modules, artifact contracts, same-ID
+explanations, navigation indexes and repository-specific Python scripts. Bundle pins must cover
+these resources, not only the manifest. The same automatic system checks and additive contract
+results run locally and through this bridge; rubric review remains external.
+
+`repo-policy-af --commit <SHA>` uses the same immutable local-object snapshot and emits identical
+hashed `review_requests` as the local CLI. The caller-owned harness dispatches reviewers and
+persists verdicts in its run artifacts; the bridge performs no dispatch, grading or verdict import.
+Machine success can coexist with `review_required: true`. See the
+[review handoff](rubric-review.md) before treating a run as accepted.
 
 The fragment follows the inspected output fields: `session_path`, `semantic_role: report`,
 `content_type`, `checksum_sha256`, `publish: false`, and `schema_version: '1.0'`. It is **not** a

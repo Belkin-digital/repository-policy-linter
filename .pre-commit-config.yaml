@@ -3,8 +3,16 @@ repos:
     hooks:
       - id: repo-policy
         name: Repository Policy Linter (locked toolchain)
-        entry: uv run --frozen --no-editable repo-policy check --allow-plugins --files
+        entry: uv run --frozen repo-policy check --all --allow-plugins
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        types: [file]
+      - id: python-format
+        name: Python formatting (check only)
+        entry: uv run --frozen ruff format --check
         language: system
         pass_filenames: true
         require_serial: true
-        types: [file]
+        types: [python]

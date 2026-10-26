@@ -1,0 +1,8 @@
+version: 2
+registries: ['.repo-policy/checks/common.yaml']
+checks: [readme, data-syntax, text-newline]
+contracts: []
+exclude:
+  - dist/**
+  - build/**
+  - .venv-policy/**

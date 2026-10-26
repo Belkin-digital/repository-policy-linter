@@ -11,12 +11,15 @@ requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["PyYAML>=6.0.3,<7"]
 
+[project.optional-dependencies]
+markdown = ["markdown-it-py==4.0.0"]
+
 [project.scripts]
 repo-policy = "repo_policy.cli:main"
 repo-policy-af = "repo_policy.af:main"
 
 [dependency-groups]
-dev = ["ruff==0.14.2", "pre-commit==4.3.0"]
+dev = ["ruff==0.14.2", "pre-commit==4.3.0", "markdown-it-py==4.0.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/repo_policy"]

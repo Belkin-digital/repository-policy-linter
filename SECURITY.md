@@ -1,4 +1,22 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # Security and privacy
+
+Policy schema 2 keeps manifests, registries, contracts and repository-specific Python scripts
+under `.repo-policy/`. Automatic structure/ID/navigation checks cannot be suppressed by policy
+filters or exceptions. These integrity checks do not establish trust in author-supplied policy
+or Python code: enforcement still needs an approved immutable bundle/toolchain and isolated
+execution for untrusted checkouts. Protect the entire policy directory, including script code,
+when applying write permissions or review ownership.
+
+Commit checks read local Git objects into an ephemeral snapshot without checkout hooks/filters
+or lazy fetches. Trusted plugins still inherit caller privileges; the snapshot is not an OS
+sandbox. Review-request hashes bind input bytes (and commit identity in commit mode), not reviewer
+identity or honesty. External verdict persistence, verification and completion enforcement belong
+to the harness; the core never treats a user-supplied JSON verdict as authenticated acceptance.
 
 Core checks and fixing run locally. No network client, telemetry, shell interpolation, LLM call,
 remote policy include or automatic package installation exists in the engine. Config uses a

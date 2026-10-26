@@ -1,0 +1,31 @@
+version: 2
+exclude:
+- dist/**
+- build/**
+- work/**
+registries:
+- .repo-policy/checks/common.yaml
+- .repo-policy/checks/markdown.yaml
+- .repo-policy/checks/skills.yaml
+- .repo-policy/checks/python.yaml
+checks:
+- readme
+- skill
+- package-metadata
+- dependency-lock
+- agent-instructions
+- claude-instructions
+- ci-workflow
+- pre-commit-config
+- engine-source
+- test-directory
+- data-syntax
+- final-newline
+- markdown-navigation
+- claude-shared-instructions
+- python-ruff
+- setup-assets
+contracts:
+- .repo-policy/contracts/documentation.yaml
+- .repo-policy/contracts/setup-skill.yaml
+- .repo-policy/contracts/rubric-review-guide.yaml

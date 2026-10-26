@@ -1,0 +1,69 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
+# Bundle configuration and contract navigation
+
+The only default manifest is `.repo-policy/policy.yaml`, schema `version: 2`. All resource
+paths and artifact selectors are repository-relative. Do not add a legacy root config or
+vendor the engine. Optional directories are created when used, without empty placeholders.
+
+- `checks/<topic>.yaml`: `version: 2`, `rules` and/or `plugins`; explicitly listed in manifest
+  `registries`. Definitions run when referenced in manifest `checks` or a contract criterion.
+- `contracts/<id>.yaml`: explicitly listed in manifest `contracts`; `contract_version: 1`,
+  `id`, nonempty `files`, optional `exclude`, nonempty `entrypoints`, nonempty `criteria`.
+- `readme/<id>.md`: optional contract explanation. Match the ID exactly; keep normative
+  criteria in the YAML and referenced rubrics.
+- `rubrics/<name>.md`: required local resource when a criterion references it.
+- `scripts/`: repository-specific Python check implementations, including nested `.py` modules.
+- `examples/`: optional regular-file examples. No symlinks in the policy directory.
+
+Check/plugin and contract IDs share a global namespace. Criterion IDs are local to their
+contract. IDs use `[a-z][a-z0-9-]{0,63}`; `engine` and `system-*` are reserved. Each criterion
+has `id` and exactly one `rule: <check-id>` or `rubric: <repo-relative-md-path>`.
+File checks use the intersection of contract selectors and check selectors. All matching
+contracts add requirements. Keep general checks active via the manifest's `checks` list.
+
+Contract example (requires check `spec-metadata` in a loaded registry):
+
+```yaml
+contract_version: 1
+id: specification
+files: ['specs/*']
+entrypoints: [specs/README.md]
+criteria:
+  - id: metadata
+    rule: spec-metadata
+```
+
+Merge `repo_policy_contracts: [specification]` into the frontmatter of each declared scope
+entrypoint, using an existing `README.md` or `AGENTS.md` at the scope root. Add local Markdown
+links to the contract and its explanation when present, preserving existing content/dates.
+Root `AGENTS.md` must carry `repo_policy_root: .repo-policy` in frontmatter when contracts
+exist. Explain its navigation route: inspect scope metadata, read `contracts/<id>.yaml` and
+optional `readme/<id>.md`, or run `repo-policy explain <id>` before editing. Preserve any
+CLAUDE import/symlink convention. Removing a pointer must not deactivate a contract.
+
+The base engine checks directory structure, unique IDs, references and navigation on every
+run. Do not configure these as removable rules. Resolve system failures before enabling
+plugins. Register Python scripts as explicit JSON/regex plugins, for example:
+
+```yaml
+version: 2
+plugins:
+  - id: spec-links
+    command: [python, .repo-policy/scripts/check_spec_links.py, '{files}']
+    format: json
+    files: ['specs/*.md']
+```
+
+Use the repository's pinned Python runtime; review code and commands before `--allow-plugins`.
+Scripts execute with caller permissions and are not sandboxed. Never copy package built-ins
+into `scripts/`. Rubric criteria remain `needs_review` and produce hashed `review_requests` for
+the current harness. Follow the [review handoff](reviews.md); the core performs no LLM calls,
+dispatches no agents and invents no verdicts. Pending review does not itself fail machine checks.
+
+After configuration, inspect `explain <id>`, run all/changed checks and repository tests.
+A partial check's exit 0 does not establish full contract acceptance. Report any non-satisfied
+contract criteria and the same bundle/toolchain requirements for local, CI and AF execution.

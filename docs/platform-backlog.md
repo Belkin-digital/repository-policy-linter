@@ -1,10 +1,19 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 # Platform concept: repository policy as a portable control
 
 Owner request, 2026-10-26: use the linter locally with Claude/Codex, retain all rules when moving
 to Agent Factory, and allow AF to check local agents' repository updates by a hook before migration.
-The same versioned `.repo-policy.yaml`, engine, exclusions, exceptions, plugin configuration and
+The same versioned `.repo-policy/` bundle, engine, exclusions, exceptions, plugin configuration and
 tool locks are the shared policy artifact. Platform enforcement configuration may choose an approved
 policy revision; it must not silently translate or fork the rules.
+
+Policy digests must include declared registries/contracts/rubrics and repository-specific Python
+scripts, with the required navigation indexes bound to the checked snapshot. Hashing only
+`policy.yaml` cannot pin the effective checks. See [the implemented bundle format](policy-bundles.md).
 
 ```text
 local Claude / Codex → commit / push / PR

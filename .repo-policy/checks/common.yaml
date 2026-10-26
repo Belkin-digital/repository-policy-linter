@@ -1,0 +1,51 @@
+version: 2
+rules:
+- id: readme
+  kind: required-path
+  path: README.md
+- id: skill
+  kind: required-path
+  path: skills/repo-policy-setup/SKILL.md
+- id: package-metadata
+  kind: required-path
+  path: pyproject.toml
+- id: dependency-lock
+  kind: required-path
+  path: uv.lock
+- id: agent-instructions
+  kind: required-path
+  path: AGENTS.md
+- id: claude-instructions
+  kind: required-path
+  path: CLAUDE.md
+- id: ci-workflow
+  kind: required-path
+  path: .github/workflows/ci.yml
+- id: pre-commit-config
+  kind: required-path
+  path: .pre-commit-config.yaml
+- id: engine-source
+  kind: required-path
+  path: src/repo_policy
+  type: directory
+- id: test-directory
+  kind: required-path
+  path: tests
+  type: directory
+- id: data-syntax
+  kind: syntax
+  files:
+  - '**/*.json'
+  - '**/*.yaml'
+  - '**/*.yml'
+- id: final-newline
+  kind: final-newline
+  files:
+  - '**/*.py'
+  - '**/*.md'
+  - '**/*.yaml'
+  - '**/*.yml'
+  - '**/*.toml'
+  - '**/*.json'
+  - '**/*.txt'
+  safe_fix: true

@@ -1,0 +1,21 @@
+version: 2
+plugins:
+- id: python-ruff
+  command:
+  - ruff
+  - check
+  - --no-fix
+  - --output-format
+  - json
+  - '{files}'
+  format: ruff
+  files:
+  - '**/*.py'
+- id: setup-assets
+  command:
+  - python
+  - .repo-policy/scripts/check_setup_assets.py
+  - '{files}'
+  format: json
+  files:
+  - skills/repo-policy-setup/assets/policy/*.yaml

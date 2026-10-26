@@ -1,1 +1,6 @@
+---
+created: 2026-10-26
+updated: 2026-10-26
+---
+
 @AGENTS.md
