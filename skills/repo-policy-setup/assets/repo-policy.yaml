@@ -1,0 +1,14 @@
+version: 1
+exclude:
+  - dist/**
+  - build/**
+  - .venv-policy/**
+rules:
+  - id: readme
+    kind: required-path
+    path: README.md
+    type: file
+  - id: data-syntax
+    kind: syntax
+    files: ['**/*.json', '**/*.yaml', '**/*.yml']
+plugins: []

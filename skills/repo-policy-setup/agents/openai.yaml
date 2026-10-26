@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repository Policy Setup"
+  short_description: "Install shared repository policies in an existing repo"
+  default_prompt: "Use $repo-policy-setup to install and configure the linter in the selected repository."

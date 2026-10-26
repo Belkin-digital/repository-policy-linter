@@ -1,0 +1,21 @@
+version: 1
+exclude: ['dist/**', 'build/**']
+rules:
+  - id: readme
+    kind: required-path
+    path: README.md
+  - id: skill
+    kind: required-path
+    path: skills/repo-policy-setup/SKILL.md
+  - id: data-syntax
+    kind: syntax
+    files: ['**/*.json', '**/*.yaml', '**/*.yml']
+  - id: final-newline
+    kind: final-newline
+    files: ['**/*.py', '**/*.md', '**/*.yaml', '**/*.yml', '**/*.toml']
+    safe_fix: true
+plugins:
+  - id: python-ruff
+    command: [ruff, check, --no-fix, --output-format, json, '{files}']
+    format: ruff
+    files: ['**/*.py']

@@ -1,0 +1,78 @@
+{
+  "inspection_date": "2026-10-26",
+  "note": "Working file hashes recorded after the authorized AF-PM concept/backlog addition; dirty files are not claimed as committed or deployed. Only sections listed in docs/agent-factory.md were inspected for long architecture contracts.",
+  "sources": [
+    {
+      "repository": "AF-PM",
+      "head": "dcf8af48e06ee411be6b4312119e299c758eab04",
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "working_sha256": "912caba4fd93be2927d99445b74792a1335108b81fae016886b554aa4fb8dea9",
+          "differs_from_head": true
+        },
+        {
+          "path": "README.md",
+          "working_sha256": "6511ecee6a4a4de3044554b851d818284dbdc1f401d23703d44ade46549245bc",
+          "differs_from_head": true
+        },
+        {
+          "path": "REPOS.md",
+          "working_sha256": "f67960be4198ac5936f1d5d247fd5a8bac9fb3889757a931b2cfaac85614a07f",
+          "differs_from_head": true
+        },
+        {
+          "path": "SSOT/agent-dev-conventions.md",
+          "working_sha256": "843d47d82816383ac68b1e23d41f178a37a608cfbd0906053149ad936151d5be",
+          "differs_from_head": false
+        },
+        {
+          "path": "plan/SoW/README.md",
+          "working_sha256": "f2f15e4dd4d801fba72b3ddbbaffa338b1c9ada6d7a5f2fc5e6c02727c89dc10",
+          "differs_from_head": true
+        },
+        {
+          "path": "plan/SoW/SoW_AF_001_platform-concept.md",
+          "working_sha256": "1e7d42343a20f4afdff8a5a05b183c0ec954da39261d3c1aef347acd394f0bc2",
+          "differs_from_head": true
+        },
+        {
+          "path": "design/architecture/contracts/DES_AF_052_declarative-skills-integration-executor.md",
+          "working_sha256": "23ac66f2e763c5d6713a986de8089778cf193eb41055e1fa64adefcb59c8b24d",
+          "differs_from_head": true
+        },
+        {
+          "path": "design/architecture/containers/AF-C02-runner/DES_AF_C02-M01_runtime-adapters.md",
+          "working_sha256": "3579c1bdc14a6f2328f97d41b5d9b16e12645197f3d5d634db8ae8bad8b002e4",
+          "differs_from_head": true
+        },
+        {
+          "path": "design/architecture/containers/AF-C02-runner/DES_AF_C02-M02_workdir-context-repo-execution.md",
+          "working_sha256": "9e5f97a91227a9f3a2d06e6c3ba5df690fa2a88cb8916994e27c2414947a8aa5",
+          "differs_from_head": true
+        },
+        {
+          "path": "design/architecture/containers/AF-C06-mcp-gateway/DES_AF_C06-M02_scm-gateway-git-proxy-gh.md",
+          "working_sha256": "30df04e2de27f904706250ed5553062badc310882226aa43122a152e054cb58b",
+          "differs_from_head": true
+        }
+      ]
+    },
+    {
+      "repository": "agent-factory-backend",
+      "head": "6e302aa43cfe88a1eb3ae26c352de46547fcbbe1",
+      "files": [
+        {
+          "path": "src/agent_factory_backend/schemas/skill.py",
+          "working_sha256": "c762c250f9066eddf0d2f6a1cb86b04b16383d323dbd43f36b3632115cc9f111",
+          "differs_from_head": false
+        },
+        {
+          "path": "src/agent_factory_backend/runner/execution/run_preparation.py",
+          "working_sha256": "03e6b2710ccfd4b3ec4f52ef10883713fd362e5842b6e057f03d9ecbd37d2075",
+          "differs_from_head": false
+        }
+      ]
+    }
+  ]
+}
