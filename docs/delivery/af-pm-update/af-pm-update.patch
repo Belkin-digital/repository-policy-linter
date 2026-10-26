@@ -1,0 +1,239 @@
+--- a/requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md
++++ b/requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md
+@@ -0,0 +1,96 @@
++---
++id: REQ_AF_005
++stream: AF
++title: Переносимые repository policies и проверка обновлений локальных агентов по webhook
++source: feedback
++tracker: []
++status: active
++solution: none
++audience: dev
++created: 2026-10-26
++updated: 2026-10-26
++---
++
++# Переносимые repository policies и проверка обновлений по webhook
++
++## Источник и статус
++
++Прямое указание владельца Алексея Белкина в текущей Codex-сессии 26.10.2026:
++локально применять линтер при работе в Claude/Codex, при переносе в Agent Factory
++сохранять все правила; предусмотреть проверку платформой работы локальных агентов
++по хуку обновления репозитория, чтобы заранее тестировать постепенный переход.
++Первоначальный контекст: [Настройка собственного линтера](chatgpt-conversation://6adf2038-5d5c-83ed-bfbb-d9f6d6f0950f).
++Эта ссылка относится к исходному обсуждению; уточнение про webhook дано в текущем
++продолжении в Codex. Его отдельный conversation id не подставлялся по догадке.
++
++Требование принято как направление продукта. Номер инкремента, сроки, набор пилотных
++репозиториев и обязательность проверки пока не назначены. Создан локальный движок
++Repository Policy Linter 0.1.0 с Runner CLI bridge; это не внедрение webhook в AF.
++Тикет Tracker не создан; `tracker: []` — явный остаток работы, не фиктивный номер.
++
++## Связь с концепцией
++
++Продолжает перенос локального workfolder/контролей в платформу из
++[SoW_AF_001_platform-concept.md](../../plan/SoW/SoW_AF_001_platform-concept.md).
++Использует существующие границы Runner/рабочего каталога и Core authorization;
++не подменяет SCM pre-receive авторизацию проверкой содержимого и не отменяет
++Policy/Approval/Audit. Контрактные `scope_NNN_*.md` этим требованием не меняются.
++
++## Требование
++
++1. Один версионируемый `.repo-policy.yaml` с правилами, исключениями и уровнями
++   диагностик применяется локально (Claude/Codex), в CI и в AF. Engine и
++   специализированные инструменты фиксируются как внешние версии/артефакты с lock/digest.
++   Перенос меняет способ исполнения, а не переписывает правила в другой DSL.
++2. Платформа может независимо от места работы агента проверять обновление выбранного
++   репозитория: подписанный push/PR event → проверка identity/RBAC/repo Resource →
++   checkout точного head SHA → детерминированный check-only Runner job → отчёт и
++   check/status, привязанный к тому же SHA. Для самого lint job LLM не требуется.
++3. Начальный режим наблюдательный, без блокировки merge. Он позволяет сравнить локальные
++   и платформенные отчёты до переноса исполнения агента на AF. Enforce включается явно
++   по выбранным репозиториям/веткам после приёмки и имеет возврат в observation.
++4. Итог включает file/line/column/rule/severity/message, status/exit code, repo/head/base
++   SHA, digest конфигурации и версии/digest toolchain. Dirty локальная копия не считается
++   доказательством проверки опубликованного коммита. При сравнении совпадают снимок,
++   all/changed file selection и approved policy revision.
++5. Enforcement использует утверждённый protected baseline policy/toolchain. Изменение
++   правил/плагинов в проверяемом PR анализируется отдельно и не может ослабить собственный
++   обязательный gate. После принятия новой policy обе среды используют её одинаково.
++6. Недоверенный код, fork, regex и plugin config исполняются только в подходящей изоляции:
++   ephemeral read-only checkout, без секретов/сети по умолчанию, с ограничениями ресурсов.
++   Разрешение запуска плагинов не выдаёт произвольному PR привилегированный shell Runner.
++7. Webhook validation, dedup/retry, обработка superseded head и публикация статуса проходят
++   существующие платформенные границы identity/RBAC/Policy/Audit. Диагностики не отправляются
++   сторонним сервисам без соответствующего выбранного канала публикации и полномочий.
++
++## Критерии приёмки
++
++- [ ] Для одного SHA, одной policy/toolchain и одинаковой выборки локальный CLI и Runner
++  дают одинаковый упорядоченный набор диагностик и код результата; регрессия покрыта тестом.
++- [ ] Подписанный push/PR event разрешённого репозитория запускает проверку точного SHA;
++  неизвестный Resource, неверная подпись и недопустимый actor отклоняются до исполнения.
++- [ ] Повторная доставка/retry не создаёт ложных повторных эффектов; старый head не может
++  опубликовать зелёный required status для нового head при out-of-order/concurrent delivery.
++- [ ] Изменение/удаление policy или команды плагина в PR не позволяет обойти approved gate;
++  candidate-policy report явно отделён от результата действующей утверждённой policy.
++- [ ] Fork check не получает секреты и не имеет привилегированного сетевого/файлового доступа;
++  проверены timeout, output limits и отказ инфраструктуры.
++- [ ] Ошибка конфигурации, недоступный инструмент, недостающая Git history или падение job
++  отображается как ошибка исполнения, а не clean; сохранены changed/all и structural checks.
++- [ ] Observation сравнивает локальный/AF результат на одинаковом снимке и объясняет drift;
++  включение/отключение enforcement не меняет правила и локальную работу агента.
++- [ ] Результат/артефакт публикуется только через разрешённый канал; сохранены SHA/digests,
++  audit context и разграничение прав. Native SkillVersion создаётся только через реальный Core.
++
++## Бэклог и открытые решения
++
++[IMP_AF_027_repository-policy-webhook.md](../../plan/improvements/IMP_AF_027_repository-policy-webhook.md)
++содержит этапы и вопросы внедрения. Требуются выбор пилотных repo/веток, владелец approved
++policy, registry артефактов/toolchain, live webhook/checks API и критерии перехода в enforce.
++Наличие CLI bridge не подтверждает E2E готовность платформы или факт релиза.
++
++## Changelog
++
++| Дата | Автор | Изменение |
++| --- | --- | --- |
++| 2026-10-26 | Codex по прямому указанию Алексея Белкина | Зафиксированы единая policy, постепенный переход local → AF и независимая push/PR проверка в observation/enforce |
+--- a/plan/improvements/IMP_AF_027_repository-policy-webhook.md
++++ b/plan/improvements/IMP_AF_027_repository-policy-webhook.md
+@@ -0,0 +1,55 @@
++# IMP_AF_027 — Переносимый repository linter и проверка по push/PR hook
++
++**Статус:** backlog; требование владельца принято 26.10.2026, реализация платформы не начата.
++**Источник:** [REQ_AF_005_repository-policy-webhook.md](../../requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md).
++**Концепция:** [SoW_AF_001_platform-concept.md](../SoW/SoW_AF_001_platform-concept.md).
++**Tracker:** не создан; инкремент и сроки не назначены.
++
++## Пользовательский сценарий
++
++Пользователь продолжает работать локально в Claude/Codex с `.repo-policy.yaml`.
++После push или обновления PR AF проверяет точный commit тем же линтером и правилами,
++показывает сравнимый отчёт, сначала без блокировки. После приёмки тот же контроль
++применяется к платформенному агенту и по явному выбору становится required check.
++
++## Текущий результат и границы
++
++В отдельном локальном репозитории `repository-policy-linter` подготовлен CLI-пакет
++0.1.0, установочный agent skill и `repo-policy-af` Runner bridge. Платформенный код,
++webhook intake, публикация GitHub checks и native SkillVersion этим не реализованы.
++Публичный remote/registry URL линтера пока отсутствует. CLI bridge не заменяет native
++Skill lifecycle и не копирует движок в рабочие репозитории.
++
++## Этапы
++
++1. Выбрать пилотный repo и общий immutable engine/toolchain; сохранить policy и locks.
++2. Добавить deterministic Runner job с тем же CLI и JSON diagnostics; локальный parity harness.
++3. Подключить доверенный push/PR intake к существующим identity/Resource/RBAC и очереди job;
++   проверять подпись, delivery id и точный SHA; не подменять SHA движущейся веткой.
++4. Добавить approved policy baseline и отдельную проверку candidate policy; исключить самообход
++   gate изменением YAML/плагинов в проверяемом PR. Изолировать fork/untrusted execution.
++5. Публиковать минимальный SHA-bound check/status и разрешённый report; dedup/retry,
++   cancellation/superseded head и восстановление после ошибок должны быть тестируемыми.
++6. Запустить observation, собрать mismatch evidence и устранить drift среды/выборки.
++7. По отдельному выбору repo/веток включить required checks; предусмотреть rollback в observation.
++8. При необходимости добавить native tool через поддерживаемый live AF protocol и Core lifecycle;
++   не выдумывать `protocol: shell`, endpoints и операции установки из файлового SKILL.md.
++
++## Критерии готовности
++
++Полные AC — в [REQ_AF_005_repository-policy-webhook.md](../../requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md).
++Особое покрытие: local/Runner parity; поддельный/replayed event; повторная доставка и crash retry;
++out-of-order heads; policy bypass; forks без секретов; timeout/missing tool/history; публикация
++статуса ровно проверенному SHA; отключение enforce без потери правил.
++
++## Открытые вопросы для проектирования
++
++- Пилотные repo/ветки и владелец review policy/toolchain?
++- Реальные deployed webhook/checks contracts и права GitHub App?
++- Где хранится общий immutable wheel/toolchain, какой Runner image/revision используется?
++- Какой существующий deterministic job slot/Artifact indexing path переиспользуем?
++- Как фиксируем approved policy SHA/digest и принимаем её обновление?
++- Какой порог parity/период observation достаточен для перехода к enforce?
++
++Подробный дизайн и декомпозиция Tracker нужны отдельно; статус backlog не равен готовности
++или включению в согласованный инкремент. Контрактные scope этим пунктом не менялись.
+--- a/plan/SoW/SoW_AF_001_platform-concept.md
++++ b/plan/SoW/SoW_AF_001_platform-concept.md
+@@ -4,7 +4,7 @@
+ title: Agent Factory — целевая платформа (CLI Agent Wrapper)
+ status: draft
+ created: 2026-06-04
+-updated: 2026-10-21
++updated: 2026-10-26
+ sources:
+   - comms/meetings/2026-06-03_sync_agent-factory-platform.md
+   - comms/meetings/2026-06-04_sync_agent-factory-platform.md
+@@ -303,6 +303,30 @@
+ | 11 | GitHub         | One-way in                              | Reviewer / PR author (policy)   | MCP → PR review comment          |
+ | 12 | Web-UI / S3 / MCP | One-way in (ingest)                  | Uploader / service account      | S3 → MD → chunks → vector index  |
+ 
++## Переносимые repository policies и постепенный переход local → AF
++
++Уточнение владельца Алексея Белкина26.10.2026:
++[REQ_AF_005_repository-policy-webhook.md](../../requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md).
++Линтер применяется локально в Claude/Codex, а при переносе агента на платформу сохраняет
++тот же `.repo-policy.yaml`, правила, исключения, версии движка и специализированных плагинов.
++Меняется место/способ запуска, без переписывания policy в отдельный платформенный DSL.
++
++До полного переноса агента платформа может проверять его работу по событию обновления
++репозитория: доверенный push/PR webhook → identity/RBAC/repo Resource → checkout точного
++SHA → детерминированный Runner check → отчёт и check/status на этом SHA. Первый этап —
++observation без блокировки merge, сравнение локальной и платформенной диагностики на
++одинаковых policy/toolchain/снимке; required gate включается по явному выбору repo/веток.
++Для самого lint job LLM не нужен. Проверка не зависит от того, локальный или платформенный
++агент создал изменение; авторство не угадывается из commit message.
++
++Enforcement использует утверждённую policy/toolchain: проверяемый PR не может ослабить
++свой gate изменением правил/команды плагина. Нужны изоляция недоверенного checkout,
++подпись/dedup/retry событий, защита от stale head results и разрешённая публикация отчёта.
++Бэклог: [IMP_AF_027_repository-policy-webhook.md](../improvements/IMP_AF_027_repository-policy-webhook.md).
++Это принятое направление, а не реализованный webhook или обещание срока/инкремента;
++контрактные scope не изменяются. SCM pre-receive authorization и content validation —
++связанные, но отдельные границы контроля.
++
+ ## Связанные артефакты
+ 
+ - Архив архитектуры legacy-прототипа: [docs/architecture/DOC_AF_003_architecture.md](../../_archive/legacy/agent-factory-2026-06-04/architecture/DOC_AF_003_architecture.md)
+--- a/plan/SoW/README.md
++++ b/plan/SoW/README.md
+@@ -46,3 +46,9 @@
+ 5. Разногласие канона и источника занести в реестр сверки с обеими версиями. Содержание спорного продуктового решения менять только после его разрешения; механическая очистка размещения не выбирает победителя.
+ 
+ Текущий проход и его границы: [normalization-plan.md](../../meta/documentation-audit/2026-10-21/normalization-plan.md), [normalization-tracker-plan.md](../../meta/documentation-audit/2026-10-21/normalization-tracker-plan.md). Контрактные `scope_NNN_*.md` в ходе такой сверки автоматически не переписывать.
++
++Уточнение Алексея26.10.2026: [REQ_AF_005_repository-policy-webhook.md](../../requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md)
++— единая policy для локального Claude/Codex и AF, проверка обновлений по push/PR hook
++в observation с последующим явным переходом к enforce. Этапы и вопросы:
++[IMP_AF_027_repository-policy-webhook.md](../improvements/IMP_AF_027_repository-policy-webhook.md).
++Направление принято; платформа ещё не внедрена, scope инкрементов не меняется.
+--- a/plan/improvements/README.md
++++ b/plan/improvements/README.md
+@@ -67,3 +67,9 @@
+ | IMP_AF_032 | Run Retry UI исключает interrupted, Session dispatch_failed/failed/retryable имеет общий retry-текст; attribution берётся из Session creator/runtime account. JSON Run.output не доказывает универсальную очистку raw provider payload | Согласовать UI состояния и команды с контрактом, различить terminal delivery failure и retry новогоMessage; показать требуемого инициатора из надёжного snapshot. Проверить output-redaction pipeline и runtime outcome отдельно, API202 не считать успешным side effect | Подтверждённые UI/contract gaps и отдельная граница evidence, утечка не утверждается; [SCR03](../../design/screens/DES_AF_SCR-03_session-conversation.md), [SCR07](../../design/screens/DES_AF_SCR-07_run-center.md), [SCR08](../../design/screens/DES_AF_SCR-08_intervention.md) |
+ 
+ Для следующей проработки каждой записи нужны пользовательский сценарий, наблюдаемый текущий результат, ожидаемая польза, влияние на существующие конфигурации и критерии проверки. После выбора решения фиксируются дата/автор и связь с REQ/DES/тикетом; до этого запись остаётся предложением. Другие неразрешённые вопросы аудита сохранены в [DECISIONS.md](../../meta/documentation-audit/2026-10-21/tracker-reconciliation/DECISIONS.md). Реестр включает как необязательные улучшения UX, так и обязательные target gaps; вторые не становятся необязательными из-за размещения здесь.
++
++## Перенос локальных контролей в платформу — 26.10.2026
++
++| ID | Сценарий / требование | План / критерий результата | Статус и источник |
++| --- | --- | --- | --- |
++| IMP_AF_027 | Локальный Claude/Codex использует policy; AF проверяет обновления repo по push/PR hook до полного переноса агента | Тот же engine/config/toolchain, exact SHA, approved policy, observation/parity → явный enforce; изоляция, dedup/retry и SHA-bound status | Требование владельца принято26.10.2026; backlog платформы, без назначенного инкремента/Tracker. [IMP_AF_027_repository-policy-webhook.md](IMP_AF_027_repository-policy-webhook.md), [REQ_AF_005_repository-policy-webhook.md](../../requirements/factory_AF/REQ_AF_005_repository-policy-webhook.md) |
+--- a/requirements/REGISTRY.md
++++ b/requirements/REGISTRY.md
+@@ -6,6 +6,7 @@
+ | REQ_AF_002 | AF | [MEMORI Telegram как канал и единое пространство алиасов каналов](factory_AF/REQ_AF_002_memori-channel-aliases.md) | feedback | — | [AFP-321](https://tracker.yandex.ru/AFP-321), [AFP-283](https://tracker.yandex.ru/AFP-283), [AFP-345](https://tracker.yandex.ru/AFP-345) | active | 2026-10-21 |
+ | REQ_AF_003 | AF | [Требования владельца из Трекера — восстановленная база и уточнения](factory_AF/REQ_AF_003_owner-tracker-baseline.md) | feedback (141 карточка createdBy Алексея Белкина и 248 комментариев, срез 21.10.2026) | — | [AFP-112](https://tracker.yandex.ru/AFP-112), [AFP-155](https://tracker.yandex.ru/AFP-155), [AFP-274](https://tracker.yandex.ru/AFP-274), [AFP-298](https://tracker.yandex.ru/AFP-298), [AFP-308](https://tracker.yandex.ru/AFP-308), [AFP-321](https://tracker.yandex.ru/AFP-321), [AFP-323](https://tracker.yandex.ru/AFP-323), [AFP-346](https://tracker.yandex.ru/AFP-346), [AFP-352](https://tracker.yandex.ru/AFP-352), [AFP-353](https://tracker.yandex.ru/AFP-353), [AFP-354](https://tracker.yandex.ru/AFP-354), [AFP-375](https://tracker.yandex.ru/AFP-375) | active | 2026-10-21 |
+ | REQ_AF_004 | AF | [Решения владельца — direct SSO, общий лимит инструкций и этапы оповещений](factory_AF/REQ_AF_004_owner-decisions.md) | feedback | inline | [AFP-123](https://tracker.yandex.ru/AFP-123), [AFP-124](https://tracker.yandex.ru/AFP-124), [AFP-300](https://tracker.yandex.ru/AFP-300), [AFP-384](https://tracker.yandex.ru/AFP-384) | active | 2026-10-21 |
++| REQ_AF_005 | AF | [Переносимые repository policies и проверка обновлений локальных агентов по webhook](factory_AF/REQ_AF_005_repository-policy-webhook.md) | feedback | — | — | active | 2026-10-26 |
+ 
+ ## Статусы
+ 
+@@ -20,4 +21,4 @@
+ 
+ | Стрим | Всего REQ | draft | active | implemented | cancelled |
+ | --- | --- | --- | --- | --- | --- |
+-| AF | 4 | 0 | 4 | 0 | 0 |
++| AF | 5 | 0 | 5 | 0 | 0 |
