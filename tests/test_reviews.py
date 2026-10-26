@@ -78,6 +78,12 @@ class ReviewTests(unittest.TestCase):
         self.git("commit", "--allow-empty", "-m", "fixture")
         return self.git("rev-parse", "HEAD").decode().strip()
 
+    def remove_loose_object(self, oid):
+        path = self.root / ".git/objects" / oid[:2] / oid[2:]
+        # Git objects are read-only; Windows requires write access before unlinking.
+        path.chmod(0o600)
+        path.unlink()
+
     def cli(self, *args):
         output, errors = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
@@ -413,7 +419,7 @@ class ReviewTests(unittest.TestCase):
     def test_missing_local_blob_returns_execution_error_without_false_success(self):
         sha = self.commit()
         oid = self.git("rev-parse", sha + ":artifacts/one.md").decode().strip()
-        (self.root / ".git/objects" / oid[:2] / oid[2:]).unlink()
+        self.remove_loose_object(oid)
         code, output, _ = self.cli("check", "--commit", sha, "--format", "json")
         self.assertEqual(code, 2)
         self.assertIn("unavailable locally", json.loads(output)["error"])
@@ -423,7 +429,7 @@ class ReviewTests(unittest.TestCase):
         self.put("artifacts/one.md", "# Next\n")
         sha = self.commit()
         (self.root / ".git/shallow").write_text(sha + "\n")
-        (self.root / ".git/objects" / parent[:2] / parent[2:]).unlink()
+        self.remove_loose_object(parent)
         with self.assertRaisesRegex(PolicyError, "required Git objects must be local"):
             run(self.root, commit=sha)
 
