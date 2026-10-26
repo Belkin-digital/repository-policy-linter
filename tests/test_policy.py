@@ -92,6 +92,21 @@ class PolicyTests(unittest.TestCase):
         self.put("docs/README.md", "No contract index\n")
         self.assertEqual(run(self.root)["exit_code"], 0)
 
+    def test_project_claude_pointer_accepts_lf_and_crlf(self):
+        source = Path(__file__).resolve().parents[1] / ".repo-policy/checks/markdown.yaml"
+        rules = yaml.safe_load(source.read_text())["rules"]
+        rule = next(rule for rule in rules if rule["id"] == "claude-shared-instructions")
+        registry = self.registry("claude", rules=[rule])
+        self.manifest(registries=[registry], checks=[rule["id"]])
+        for newline in (b"\n", b"\r\n"):
+            with self.subTest(newline=newline):
+                self.put("CLAUDE.md", b"# Instructions" + newline + b"@AGENTS.md" + newline)
+                self.assertEqual(run(self.root)["exit_code"], 0)
+                self.put("CLAUDE.md", b"@AGENTS.md.extra" + newline)
+                report = run(self.root)
+                self.assertEqual(report["exit_code"], 1)
+                self.assertEqual([d["rule"] for d in report["diagnostics"]], [rule["id"]])
+
     def test_overlapping_contracts_add_requirements_and_global_checks_remain_active(self):
         self.bundle()
         extra = self.registry(

@@ -19,4 +19,4 @@ rules:
   kind: required-text
   files:
   - CLAUDE.md
-  pattern: ^@AGENTS\.md$
+  pattern: ^@AGENTS\.md\r?$
