@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # External tool plugins
@@ -9,6 +9,11 @@ The engine routes file sets and normalizes diagnostics. It never installs tools 
 uses `shell=False`, passes root-relative files as separate `./path` arguments, and never adds fix
 flags. Review executable paths, options, native configs and dependency locks before enabling
 `--allow-plugins`. The flag authorizes all configured plugins for this invocation.
+
+On Windows, bare executable names are resolved through the caller's `PATH` before launch,
+so a `python` plugin uses the selected environment instead of Windows choosing the parent
+interpreter's installation directory. Explicit executable paths keep their configured meaning.
+See Python's [executable resolution guidance](https://docs.python.org/3/library/subprocess.html#popen-constructor).
 
 Real Ruff integration (Ruff retains all Python analysis logic):
 

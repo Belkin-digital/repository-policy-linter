@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -14,12 +15,17 @@ OUTPUT_LIMIT = 4 * 1_048_576
 
 
 def _run(command, root, timeout):
+    # Windows otherwise searches the parent interpreter's directory before PATH.
+    executable = (
+        shutil.which(command[0]) if os.name == "nt" and not os.path.dirname(command[0]) else None
+    )
     # File-backed capture prevents unbounded RAM use; inspect a bounded output only.
     # Disk/CPU/network containment belongs to the caller's OS/container sandbox.
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
         try:
             child = subprocess.Popen(
                 command,
+                executable=executable,
                 cwd=root,
                 stdin=subprocess.DEVNULL,
                 stdout=stdout,

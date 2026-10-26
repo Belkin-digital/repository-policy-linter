@@ -9,6 +9,7 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -428,6 +429,18 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(PolicyError):
             run(self.root)
         self.assertFalse((self.root / "executed").exists())
+
+    def test_bare_python_plugin_uses_interpreter_from_path(self):
+        plugin = self.plugin(
+            "import sys\nprint('[]')\nsys.exit(0 if sys.prefix == sys.argv[1] else 2)\n"
+        )
+        plugin["command"] = [Path(sys.executable).name, plugin["command"][1], sys.prefix, "{files}"]
+        self.config([], plugins=[plugin])
+        path = str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
+        with patch.dict(os.environ, {"PATH": path}):
+            report = run(self.root, allow_plugins=True)
+        self.assertEqual(report["exit_code"], 0)
+        self.assertEqual(report["diagnostics"], [])
 
     def test_json_plugin_no_shell_interpolation(self):
         self.plugin(
