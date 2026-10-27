@@ -14,12 +14,20 @@ documents building the wheel and installing the standalone skill. Record the cho
 commit when building a wheel. Links to `main` are documentation entrypoints, not immutable
 dependency pins or evidence of a package release.
 
-Use an actual published version or a wheel with an immutable digest. Never install an unrelated
-package just because a name matches this unreleased project. Example helper call (replace the
-example source/digest with the actual built wheel; an illustrative URL is not a published artifact):
+Use an actual published version from the official
+[PyPI project](https://pypi.org/project/repository-policy-linter/), after checking its source URLs,
+or a wheel with an immutable digest. Never infer publication from a source version alone.
+For an available registry version, preview the helper with:
 
 ```text
-python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.4.0-py3-none-any.whl#sha256=<actual-64-hex-digest>'
+python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter==0.4.1'
+```
+
+For a version not yet published, use the actual built wheel instead (replace the example
+source/digest; an illustrative URL is not a published artifact):
+
+```text
+python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl#sha256=<actual-64-hex-digest>'
 ```
 
 Preview first, then repeat with `--apply`. Target dependency files are left unchanged if they
@@ -34,7 +42,7 @@ manager or an offline wheelhouse; `==` pins alone are not a full supply-chain lo
 ## Markdown navigation policies
 
 For `markdown-reachable`, install the same approved distribution with its `[markdown]` extra.
-The helper accepts `repository-policy-linter[markdown]==0.4.0` or
+The helper accepts `repository-policy-linter[markdown]==0.4.1` or
 `repository-policy-linter[markdown] @ <approved-wheel-URL>#sha256=<actual-digest>` as well as
 the existing base requirement forms. Keep parser and transitive dependency pins identical
 in local, CI and AF environments. No extra is needed for the base rules.

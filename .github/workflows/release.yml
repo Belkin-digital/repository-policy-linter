@@ -1,0 +1,129 @@
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build (for example v0.4.0)
+        required: true
+        type: string
+      publish:
+        description: Upload verified distributions to PyPI
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'Belkin-digital/repository-policy-linter' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify the release tag and package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ['RELEASE_TAG']
+          if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag):
+              raise SystemExit('release tag must be vMAJOR.MINOR.PATCH')
+          project = tomllib.loads(Path('pyproject.toml').read_text())['project']
+          if project['name'] != 'repository-policy-linter' or tag != 'v' + project['version']:
+              raise SystemExit('release tag and package metadata must match')
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          if git('rev-parse', 'HEAD') != git('rev-parse', f'refs/tags/{tag}^{{commit}}'):
+              raise SystemExit('checkout must match the release tag')
+          print(f'Verified {tag} at {git("rev-parse", "HEAD")}')
+          PY
+      - run: python -m pip install uv==0.12.4
+      - run: uv sync --frozen
+      - run: uv run --frozen python -m unittest discover -s tests -v
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      - run: uv run --frozen repo-policy check --all --allow-plugins
+      - run: uv run --frozen pre-commit run --all-files
+      - run: uv run --frozen uv build --no-sources
+      - run: uv run --frozen python scripts/smoke_wheel.py
+      - name: Verify source archive against the selected Git tree
+        run: |
+          python - <<'PY'
+          import subprocess
+          import tarfile
+          import tomllib
+          from pathlib import Path, PurePosixPath
+
+          project = tomllib.loads(Path('pyproject.toml').read_text())['project']
+          version = project['version']
+          archive = Path(f'dist/repository_policy_linter-{version}.tar.gz')
+          prefix = f'repository_policy_linter-{version}'
+          tracked = set(subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0'))
+          found = set()
+          with tarfile.open(archive) as bundle:
+              for member in bundle.getmembers():
+                  path = PurePosixPath(member.name)
+                  if not path.parts or path.parts[0] != prefix or '..' in path.parts:
+                      raise SystemExit('source archive has an unsafe path')
+                  if member.isdir():
+                      continue
+                  name = path.relative_to(prefix).as_posix()
+                  if not member.isfile() or name in found:
+                      raise SystemExit('source archive must contain unique regular files')
+                  found.add(name)
+                  if name == 'PKG-INFO':
+                      continue
+                  if name not in tracked:
+                      raise SystemExit(f'source archive contains an untracked file: {name}')
+                  expected = subprocess.check_output(['git', 'show', f'HEAD:{name}'])
+                  if bundle.extractfile(member).read() != expected:
+                      raise SystemExit(f'source archive differs from its Git tag: {name}')
+          if not {'pyproject.toml', 'README.md', 'src/repo_policy/cli.py'} <= found:
+              raise SystemExit('source archive is missing required project files')
+          print(f'Verified {len(found)} source archive files against the release tag')
+          PY
+      - run: sha256sum dist/*.whl dist/*.tar.gz
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/repository-policy-linter/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: distributions
+          path: dist/
+      - name: Publish verified distributions with Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1

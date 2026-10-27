@@ -5,9 +5,11 @@ updated: 2026-10-27
 
 # Release and versioning
 
-Version 0.4.0 source is available in the public
+Version 0.4.1 source is available in the public
 [GitHub repository](https://github.com/Belkin-digital/repository-policy-linter).
-Wheels are built locally; no registry name ownership or package release is assumed.
+Registry releases use the official
+[PyPI project](https://pypi.org/project/repository-policy-linter/). Verify that the selected
+version is available there; a source commit or successful build is not a published release.
 The package metadata version and `repo_policy.__version__` must match. CLI `--version` prints it;
 reports carry engine/config/diagnostic schema versions. SemVer applies to the package; a breaking
 config/diagnostic schema requires a new explicit schema version, not silent reinterpretation.
@@ -35,9 +37,10 @@ by the tests and release verification below.
    checker runs locally without network. Use an approved wheelhouse for offline installation.
 3. Compute SHA-256 of the wheel; retain the source commit and dependency lock. Install the skill
    in a disposable scope and test setup twice in a disposable target repository.
-4. After the chosen remote/registry is available and publication is authorized, push the reviewed
-   commit, tag `v<package-version>` and upload the wheel/sdist/checksums. Package naming must be
-   verified at that time; do not overwrite another distribution or reuse an existing release version.
+4. After publication is authorized, push the reviewed commit and an immutable
+   `v<package-version>` tag. Run the release workflow below, first without uploading, then
+   with publishing enabled. Verify package naming; never overwrite another distribution,
+   move an existing release tag or reuse an existing release version.
 5. Point target dependency locks to the same immutable distribution for local agents, CI and AF.
    Use an internal wheelhouse for offline operation. Keep skill installation separate from engine
    installation; changing a skill does not silently upgrade the engine in target repositories.
@@ -45,3 +48,61 @@ by the tests and release verification below.
 The source repository contains `scripts/install_skill.py`; it copies only `skills/repo-policy-setup`
 to an explicit destination. The engine wheel intentionally contains no repository setup scripts
 or auto-install hooks. The source distribution includes the skill and project documentation.
+
+## First-time PyPI setup
+
+The owner needs a [PyPI account](https://pypi.org/account/register/), a verified email and
+two-factor authentication. Complete registration, terms acceptance and recovery setup personally;
+do not send passwords, recovery codes or API tokens through the project or chat.
+
+On [account publishing](https://pypi.org/manage/account/publishing/), configure a pending GitHub
+publisher for the first release. For an existing project use its Publishing settings instead.
+The exact fields for this repository are:
+
+| PyPI field | Value |
+| --- | --- |
+| PyPI project name | `repository-policy-linter` |
+| GitHub repository owner | `Belkin-digital` |
+| GitHub repository name | `repository-policy-linter` |
+| Workflow filename | `release.yml` |
+| Environment name | `pypi` |
+
+Create the matching `pypi` environment in GitHub. A pending publisher creates the PyPI project
+on the first successful upload; it does not reserve the name in advance. This workflow uses
+short-lived OIDC credentials, without a stored PyPI token. See the official
+[pending publisher instructions](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+and [publishing documentation](https://docs.pypi.org/trusted-publishers/using-a-publisher/).
+
+## Manual release workflow
+
+[release.yml](../.github/workflows/release.yml) is manually dispatched from `main`. Its build job
+checks out only the requested version tag, verifies the tag against package metadata, retains
+first-parent history and runs frozen tests, lint/format, policy, pre-commit, build and wheel smoke
+checks. The resulting wheel and sdist are retained as a GitHub Actions artifact with checksums
+in the build log. Archive paths and source bytes must match the selected Git tree; local app
+settings and other untracked files are not distributable source. This job has no PyPI/OIDC permission.
+
+Run a rehearsal for an existing reviewed tag:
+
+```bash
+gh workflow run release.yml --repo Belkin-digital/repository-policy-linter --ref main -f tag=v0.4.1 -f publish=false
+```
+
+After the rehearsal passes and the matching publisher is configured, run the same command with
+`-f publish=true`. Only the separate `publish` job receives `id-token: write` in the `pypi`
+environment. It downloads this run's verified artifact and invokes the official PyPA action;
+it does not check out or run project code. No push or tag event automatically publishes packages.
+An older reviewed tag, such as `v0.4.0`, may be selected without changing its source or version.
+
+After upload, verify both files and their SHA-256 digests through PyPI's release JSON, then
+install the exact version from PyPI in a fresh environment outside the checkout:
+
+```bash
+python3 -m venv /tmp/repo-policy-release-check
+/tmp/repo-policy-release-check/bin/python -m pip install 'repository-policy-linter[markdown]==0.4.1'
+/tmp/repo-policy-release-check/bin/repo-policy --version
+```
+
+Exercise `init` and `check` in a disposable repository. Record the source commit, workflow run,
+artifact checksums and PyPI version URL. PyPI authorization or a name conflict is a publication
+blocker; a successful build or GitHub upload alone must not be reported as a PyPI release.

@@ -12,7 +12,9 @@ Project source: [Belkin-digital/repository-policy-linter](https://github.com/Bel
 The [upstream skill folder](https://github.com/Belkin-digital/repository-policy-linter/tree/main/skills/repo-policy-setup)
 contains this skill and its helpers. Use the project's
 [build and installation instructions](https://github.com/Belkin-digital/repository-policy-linter/blob/main/README.md)
-to obtain the engine separately; a source repository is not a published PyPI distribution.
+to obtain the engine separately. For registry installation, verify the selected version on the
+official [PyPI project](https://pypi.org/project/repository-policy-linter/) and its source URLs;
+a source repository alone does not establish that a version has been published.
 
 Work only in the repository selected by the user. Installing this skill does not authorize
 changing other repositories. The engine is an external, versioned dependency; never copy
@@ -31,7 +33,7 @@ This skill is self-contained; the target agent does not need this project's root
    pre-commit and CI configuration. Inspect Git status; preserve unrelated edits, comments,
    YAML anchors and symlinks. Determine the repository root explicitly.
 2. Resolve an available immutable engine distribution: a published exact version, or an
-   approved wheel/artifact URL with SHA-256. For this unreleased version use the built wheel
+   approved wheel/artifact URL with SHA-256. For a version not yet published, use the built wheel
    from the [source repository](https://github.com/Belkin-digital/repository-policy-linter)
    at a recorded commit SHA. Keep the distribution accessible to both local and platform
    execution; a `file://` URL is a local pilot, not a portable platform installation.

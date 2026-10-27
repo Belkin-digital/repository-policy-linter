@@ -5,6 +5,16 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.4.1 — 2026-10-27
+
+- Add a manually dispatched, tag-verified PyPI release workflow with a check-only rehearsal,
+  locked tests/build verification and an isolated Trusted Publishing job.
+- Document first-time PyPI account/publisher setup and version-pinned registry installation,
+  keeping digest-pinned wheels available for versions not yet released.
+- Include official source, documentation and issue URLs in distribution metadata.
+- Exclude local app configuration from source archives and reject release archive files that
+  do not match the selected Git tag's tracked source bytes.
+
 ## 0.4.0 — 2026-10-27
 
 - Repository-scoped plugins run even for empty or deletion-only selections and may report

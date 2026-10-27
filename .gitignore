@@ -7,4 +7,5 @@ build/
 *.egg-info/
 .coverage
 .DS_Store
+/docviewer.json
 work/

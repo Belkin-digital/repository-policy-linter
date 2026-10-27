@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "repository-policy-linter"
-version = "0.4.0"
+version = "0.4.1"
 description = "Local, language-agnostic repository policy checks with explicit tool plugins"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,6 +17,12 @@ markdown = ["markdown-it-py==4.0.0"]
 [project.scripts]
 repo-policy = "repo_policy.cli:main"
 repo-policy-af = "repo_policy.af:main"
+
+[project.urls]
+Homepage = "https://github.com/Belkin-digital/repository-policy-linter"
+Repository = "https://github.com/Belkin-digital/repository-policy-linter"
+Documentation = "https://github.com/Belkin-digital/repository-policy-linter/blob/main/README.md"
+Issues = "https://github.com/Belkin-digital/repository-policy-linter/issues"
 
 [dependency-groups]
 dev = ["ruff==0.14.2", "pre-commit==4.3.0", "markdown-it-py==4.0.0", "packaging==26.3"]
