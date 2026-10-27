@@ -25,6 +25,9 @@ def selection_options(parser):
     selection.add_argument(
         "--commit", help="check the exact commit snapshot against its first parent"
     )
+    parser.add_argument(
+        "--context-input", help="caller JSON outside the repository for Git context plugins"
+    )
     parser.add_argument("--base", help="with --changed: merge-base with this Git ref")
     parser.add_argument(
         "--allow-plugins", action="store_true", help="permit reviewed external commands"
@@ -47,6 +50,7 @@ def execute(args):
         fail_on=args.fail_on,
         fix=getattr(args, "command", None) == "fix" and not args.dry_run,
         commit=args.commit,
+        context_input=getattr(args, "context_input", None),
     )
 
 

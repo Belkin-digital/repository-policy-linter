@@ -237,6 +237,7 @@ def validate(config):
                 "diagnostic_codes",
                 "pattern",
                 "scope",
+                "context",
             },
             plugin["id"],
         )
@@ -245,6 +246,13 @@ def validate(config):
             raise PolicyError("plugin.scope must be files or repository")
         if plugin["command"].count("{files}") != 1:
             raise PolicyError("plugin.command must contain one standalone {files} argument")
+        if "context" in plugin and plugin["context"] != "git":
+            raise PolicyError("plugin.context must be git")
+        if plugin.get("context") == "git":
+            if plugin.get("scope") != "repository" or plugin["command"].count("{context}") != 1:
+                raise PolicyError("Git context needs repository scope and one standalone {context}")
+        elif "{context}" in plugin["command"]:
+            raise PolicyError("{context} requires plugin.context: git")
         if plugin.get("format") not in ("json", "ruff", "regex"):
             raise PolicyError("plugin.format must be json, ruff or regex")
         number(plugin.get("timeout", 30), "plugin.timeout", 300)

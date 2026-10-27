@@ -1,8 +1,10 @@
+from contextlib import ExitStack
 from pathlib import Path
 
 from . import __version__
 from .config import CONFIG_NAME, LIMIT
 from .files import matches, safe_path, select_files
+from .git_context import git_context
 from .history import check_preserved_frontmatter, git_baseline
 from .markdown_graph import check_reachability
 from .model import PolicyError
@@ -25,6 +27,7 @@ def run(
     allow_plugins=False,
     fail_on="error",
     commit=None,
+    context_input=None,
 ):
     root = Path(root).resolve()
     if not root.is_dir():
@@ -51,6 +54,7 @@ def run(
                 parent=snapshot.parent,
                 changed_paths=snapshot.changed,
                 git_root=root,
+                context_input=context_input,
             )
             snapshot.verify()
             return report
@@ -63,6 +67,7 @@ def run(
         fix=fix,
         allow_plugins=allow_plugins,
         fail_on=fail_on,
+        context_input=context_input,
     )
 
 
@@ -80,9 +85,15 @@ def _run(
     parent=None,
     changed_paths=None,
     git_root=None,
+    context_input=None,
 ):
     policy = load_policy(root, config_name)
     config = policy.config
+    needs_context = any(p.get("context") == "git" for p in config.get("plugins", []))
+    if fix and needs_context:
+        raise PolicyError("Git context plugins are check-only; no fixes were applied")
+    if context_input is not None and not needs_context:
+        raise PolicyError("--context-input requires an enabled Git context plugin")
     names, skipped = select_files(root, config, mode, base, files)
     all_names, review_targets = None, {}
     if policy.contracts:
@@ -170,33 +181,55 @@ def _run(
             text += "\r\n" if b"\r\n" in raw else "\n"
             found = [d for rule in text_rules for d in check_text(rule, name, text)]
         diagnostics.extend(found)
-    repository_names = None
-    for plugin in config.get("plugins", []):
-        repository = plugin.get("scope", "files") == "repository"
-        if repository and repository_names is None:
-            repository_names, _ = select_files(root, {"exclude": []}, mode="all")
-        chosen = [
-            name
-            for name in (repository_names if repository else names)
-            if not excepted(plugin, name) and (repository or policy.in_scope(plugin["id"], name))
-        ]
-        if repository or any(applies(name, plugin) for name in chosen):
-            if not allow_plugins:
-                raise PolicyError(
-                    f"{plugin['id']}: external command requires --allow-plugins after review"
+    with ExitStack() as context_stack:
+        context_path = None
+        if needs_context:
+            context_path, context_summary = context_stack.enter_context(
+                git_context(
+                    root,
+                    git_root=git_root,
+                    commit=commit,
+                    parent=parent,
+                    base=base,
+                    context_input=context_input,
                 )
-            diagnostics.extend(
-                d for d in run_plugin(plugin, root, chosen) if not excepted(plugin, d.file)
             )
-            if repository:
-                repository_checks.append(
-                    {
-                        "rule": plugin["id"],
-                        "kind": "plugin",
-                        "scope": "repository",
-                        "files_checked": [n for n in chosen if applies(n, plugin)],
-                    }
+            repository_checks.append(context_summary)
+        repository_names = None
+        for plugin in config.get("plugins", []):
+            repository = plugin.get("scope", "files") == "repository"
+            if repository and repository_names is None:
+                repository_names, _ = select_files(root, {"exclude": []}, mode="all")
+            chosen = [
+                name
+                for name in (repository_names if repository else names)
+                if not excepted(plugin, name)
+                and (repository or policy.in_scope(plugin["id"], name))
+            ]
+            if repository or any(applies(name, plugin) for name in chosen):
+                if not allow_plugins:
+                    raise PolicyError(
+                        f"{plugin['id']}: external command requires --allow-plugins after review"
+                    )
+                diagnostics.extend(
+                    d
+                    for d in run_plugin(
+                        plugin,
+                        root,
+                        chosen,
+                        context=context_path if plugin.get("context") == "git" else None,
+                    )
+                    if not excepted(plugin, d.file)
                 )
+                if repository:
+                    repository_checks.append(
+                        {
+                            "rule": plugin["id"],
+                            "kind": "plugin",
+                            "scope": "repository",
+                            "files_checked": [n for n in chosen if applies(n, plugin)],
+                        }
+                    )
     version_rules = [
         rule
         for rule in rules

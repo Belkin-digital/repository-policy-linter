@@ -10,7 +10,7 @@ One versioned `.repo-policy/` bundle and engine, the same diagnostics on every e
 Python 3.11+; one core runtime dependency (PyYAML); no telemetry, network calls or LLM service.
 Optional Markdown reachability checks use the `[markdown]` extra (markdown-it-py and mdurl).
 
-**Status:** working version 0.4.1. Public source:
+**Status:** working version 0.5.0. Public source:
 [Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).
 Install an available version from the official
 [PyPI project](https://pypi.org/project/repository-policy-linter/), or build a wheel from a
@@ -82,14 +82,14 @@ For an available PyPI release, install the exact approved version in an isolated
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install 'repository-policy-linter==0.4.1'
+/path/to/target/.venv-policy/bin/python -m pip install 'repository-policy-linter==0.5.0'
 ```
 
 If that version has not been published, build and install its wheel instead:
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl
+/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.5.0-py3-none-any.whl
 cd /path/to/target
 .venv-policy/bin/repo-policy init
 .venv-policy/bin/repo-policy check --all
@@ -105,8 +105,8 @@ an internal wheelhouse using pip's `--no-index --find-links`; dependency install
 network access otherwise, while the engine itself does not.
 
 For the optional `markdown-reachable` rule, install the same approved wheel with its extra:
-`python -m pip install 'repository-policy-linter[markdown]==0.4.1'`, or
-`python -m pip install '/absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl[markdown]'`
+`python -m pip install 'repository-policy-linter[markdown]==0.5.0'`, or
+`python -m pip install '/absolute/path/to/repository_policy_linter-0.5.0-py3-none-any.whl[markdown]'`
 for an unpublished version.
 Pin the extra and transitive dependencies in the target toolchain for local/CI/AF parity.
 This checkout's dev lock already includes the Markdown parser.
@@ -184,7 +184,7 @@ distribution; it is intentionally separate from the engine wheel.
 Open the selected target repo in its agent, then invoke:
 
 ```text
-Codex: $repo-policy-setup Install an available PyPI release or the supplied 0.4.1 wheel.
+Codex: $repo-policy-setup Install an available PyPI release or the supplied 0.5.0 wheel.
 Claude Code: /repo-policy-setup Install the linter in this repository using the supplied wheel.
 ```
 
