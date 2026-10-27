@@ -1,3 +1,3 @@
 """Repository Policy Linter: no telemetry or network clients."""
 
-__version__ = "0.4.1"
+__version__ = "0.5.1"

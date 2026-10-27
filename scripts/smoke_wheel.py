@@ -298,6 +298,80 @@ def main():
         print(
             "Skill distribution and target integration smoke test passed (repeat setup unchanged)."
         )
+        history = directory / "history"
+        history.mkdir()
+        (history / ".repo-policy/checks").mkdir(parents=True)
+        (history / "README.md").write_bytes(b"old")
+        inspect = (
+            "import json,sys,hashlib;from pathlib import Path;"
+            "c=json.loads(Path(sys.argv[1]).read_text());"
+            "assert c['before']['README.md']['sha256']==hashlib.sha256(b'old').hexdigest();"
+            "assert c['after']['README.md']['sha256']==hashlib.sha256(b'new').hexdigest();"
+            "assert c['current_kind']!='commit' or not (Path(c['current_root'])/'.git').exists();"
+            "print('[]')"
+        )
+        import yaml
+
+        (history / ".repo-policy/checks/history.yaml").write_text(
+            yaml.safe_dump(
+                {
+                    "version": 2,
+                    "plugins": [
+                        {
+                            "id": "history",
+                            "scope": "repository",
+                            "context": "git",
+                            "command": [str(python), "-c", inspect, "{context}", "{files}"],
+                            "format": "json",
+                            "files": ["README.md"],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (history / ".repo-policy/policy.yaml").write_text(
+            "version: 2\nregistries: [.repo-policy/checks/history.yaml]\nchecks: [history]\ncontracts: []\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "init", "-q", str(history)], check=True, env=env)
+
+        def history_commit():
+            subprocess.run(["git", "-C", str(history), "add", "."], check=True, env=env)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(history),
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "commit.gpgsign=false",
+                    "-c",
+                    "user.name=Fixture",
+                    "-c",
+                    "user.email=fixture@localhost",
+                    "commit",
+                    "-qm",
+                    "Fixture",
+                ],
+                check=True,
+                env=env,
+            )
+
+        history_commit()
+        (history / "README.md").write_bytes(b"new")
+        subprocess.run(
+            [str(command), "check", "--all", "--allow-plugins"], cwd=history, env=env, check=True
+        )
+        history_commit()
+        subprocess.run(
+            [str(command), "check", "--commit", "HEAD", "--allow-plugins"],
+            cwd=history,
+            env=env,
+            check=True,
+        )
+        print("Installed wheel exposes exact Git contexts without checkout Git access.")
         print("Wheel smoke test passed (isolated, non-editable installation).")
         print("SHA256: " + hashlib.sha256(wheel.read_bytes()).hexdigest())
 

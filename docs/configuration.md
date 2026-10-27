@@ -261,3 +261,26 @@ Safe fixing appends LF or detected CRLF to a nonempty file; preserves existing b
 Markdown hard-break spaces) and mode bits, refuses symlinks/hardlinks, checks concurrent changes
 and replaces through an adjacent temporary file. Empty files remain empty. It does not preserve
 timestamps, inode identity, extended attributes or ACLs; use check-only where these matter.
+
+## Git comparison context (0.5.0)
+
+A repository plugin may declare `context: git` and one standalone `{context}` argument
+in addition to `{files}`. The engine passes an ephemeral JSON file outside the checkout:
+`context_version: 1`, `kind: git`, current/baseline roots, exact commit/tree/parents,
+full before/after entry mappings and delete/add/modify records. Global file exclusions
+do not hide versioned secrets, archives or deletions. Renames are delete/add facts.
+
+Pending tracked or untracked changes compare with HEAD. Clean checks and exact commits
+compare with the first parent. Changed/base checks use the selection merge-base. Initial
+commits have a known empty baseline; missing required objects fail. No hooks, filters or
+network are used by context construction. `fix` is refused before any writes. The engine
+verifies baseline/context/current bytes after plugins; commands remain trusted, not sandboxed.
+
+An optional `--context-input /outside/checkout/input.json` is caller-owned input, limited
+to 1 MiB. JSON has `context_input_version: 1`, optional `extensions` mapping, and at most
+64 `git_queries`. Queries are `{kind: commit, commit: full_SHA}` or
+`{kind: ancestor, ancestor: full_SHA, descendant: full_SHA}` for this repository only.
+The context/report binds the input SHA-256. Unknown/missing Git objects or insufficient
+ancestry history fail; no fetch occurs. Extensions do not authenticate a human approval.
+The harness owns input provenance and permission; text in a checked artifact is not approval.
+Legacy plugins and schema/report v1 remain unchanged without opt-in. AF uses the same option.

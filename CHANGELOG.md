@@ -5,6 +5,19 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.5.1 — 2026-10-27
+
+- Make Git context fixtures independent of Windows autocrlf defaults and avoid removing
+  read-only Git objects when checking a non-Git root. Runtime Git-context behavior is unchanged.
+
+## 0.5.0 — 2026-10-27
+
+- Add opt-in repository plugin Git contexts with exact two-tree baselines, deletions,
+  tracked/untracked state and post-check integrity verification.
+- Add caller-supplied context input outside the checkout and bounded exact local Git queries.
+- Keep legacy plugins/report v1 compatible; reject context-enabled fixes before writes.
+- Support depth-two snapshot comparisons without requiring unrelated grandparents.
+
 ## 0.4.1 — 2026-10-27
 
 - Add a manually dispatched, tag-verified PyPI release workflow with a check-only rehearsal,

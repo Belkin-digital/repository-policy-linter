@@ -50,13 +50,18 @@ def _run(command, root, timeout):
         return code, stdout.read().decode("utf-8")
 
 
-def run_plugin(plugin, root, files):
+def run_plugin(plugin, root, files, *, context=None):
     repository = plugin.get("scope", "files") == "repository"
     chosen = [name for name in files if applies(name, plugin)]
     if not chosen and not repository:
         return []
     command = []
     for arg in plugin["command"]:
+        if arg == "{context}":
+            if context is None:
+                raise PolicyError("Git context is unavailable")
+            command.append(str(context))
+            continue
         # Prefix prevents filenames being treated as command-line options.
         command.extend(["./" + name for name in chosen] if arg == "{files}" else [arg])
     try:

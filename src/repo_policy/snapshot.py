@@ -87,7 +87,7 @@ class Snapshot:
 
 
 @contextmanager
-def commit_snapshot(root, ref):
+def commit_snapshot(root, ref, *, include_changes=True):
     if not isinstance(ref, str) or not ref:
         raise PolicyError("--commit requires a commit or ref")
     top = git_read(root, "rev-parse", "--show-toplevel")
@@ -111,7 +111,7 @@ def commit_snapshot(root, ref):
             metadata, name = raw.split(b"\t", 1)
             mode, kind, oid = metadata.split()
             entries.append((mode, kind, oid, os.fsdecode(name)))
-    if parent:
+    if parent and include_changes:
         changed = git_read(
             root,
             "diff-tree",
