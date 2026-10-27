@@ -20,6 +20,7 @@ class GitContextTests(unittest.TestCase):
         self.root.mkdir()
         self.output = self.directory / "observed.json"
         self.git("init", "-q")
+        self.git("config", "core.autocrlf", "false")
         self.write("item.md", "original\n")
         self.write(".gitignore", "ignored/\n__pycache__/\n")
         self.write(
@@ -198,9 +199,7 @@ class GitContextTests(unittest.TestCase):
         self.assertEqual(run(clone, commit="HEAD", allow_plugins=True)["exit_code"], 0)
 
     def test_non_git_root_fails(self):
-        import shutil
-
-        shutil.rmtree(self.root / ".git")
+        (self.root / ".git").rename(self.directory / "detached-git")
         with self.assertRaises(PolicyError):
             self.inspect()
 

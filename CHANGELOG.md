@@ -5,6 +5,11 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.5.1 — 2026-10-27
+
+- Make Git context fixtures independent of Windows autocrlf defaults and avoid removing
+  read-only Git objects when checking a non-Git root. Runtime Git-context behavior is unchanged.
+
 ## 0.5.0 — 2026-10-27
 
 - Add opt-in repository plugin Git contexts with exact two-tree baselines, deletions,

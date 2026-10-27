@@ -5,7 +5,7 @@ updated: 2026-10-27
 
 # Release and versioning
 
-Version 0.5.0 source is available in the public
+Version 0.5.1 source is available in the public
 [GitHub repository](https://github.com/Belkin-digital/repository-policy-linter).
 Registry releases use the official
 [PyPI project](https://pypi.org/project/repository-policy-linter/). Verify that the selected
@@ -85,7 +85,7 @@ settings and other untracked files are not distributable source. This job has no
 Run a rehearsal for an existing reviewed tag:
 
 ```bash
-gh workflow run release.yml --repo Belkin-digital/repository-policy-linter --ref main -f tag=v0.5.0 -f publish=false
+gh workflow run release.yml --repo Belkin-digital/repository-policy-linter --ref main -f tag=v0.5.1 -f publish=false
 ```
 
 After the rehearsal passes and the matching publisher is configured, run the same command with
@@ -99,7 +99,7 @@ install the exact version from PyPI in a fresh environment outside the checkout:
 
 ```bash
 python3 -m venv /tmp/repo-policy-release-check
-/tmp/repo-policy-release-check/bin/python -m pip install 'repository-policy-linter[markdown]==0.5.0'
+/tmp/repo-policy-release-check/bin/python -m pip install 'repository-policy-linter[markdown]==0.5.1'
 /tmp/repo-policy-release-check/bin/repo-policy --version
 ```
 
