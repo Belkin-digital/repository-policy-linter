@@ -5,6 +5,11 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.3.2 — 2026-10-27
+
+- Require evaluating each new rule for simple, reliable linter enforcement, and obtain user
+  approval before implementing or expanding resource-intensive rubric checks.
+
 ## 0.3.1 — 2026-10-27
 
 - Evaluate the version gate after opt-in fixes, so newline repairs on a clean checkout also

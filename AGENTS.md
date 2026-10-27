@@ -29,6 +29,21 @@ The built-in `package-version-increment` policy check enforces a higher SemVer i
 `pyproject.toml`: pending tracked changes compare against HEAD; clean checkouts and
 `--commit` compare against the checked commit's first parent. CI needs both commits locally.
 
+## Adding checks and rules
+
+For every new check, rule or acceptance requirement, first ask:
+"Can this be implemented in the linter reasonably, reliably and simply?"
+If yes, implement and enforce it through the shared engine or repository policy, reusing
+existing checks and tool integrations where appropriate. If not, explain the limitation
+before proposing another enforcement mechanism.
+
+Rubric checks consume reviewer time and tokens. Always ask the user for explicit approval
+before implementing a new rubric check, changing its criteria or expanding its coverage or
+automatic triggers. Explain why machine checks are insufficient, what will be reviewed,
+when reviews will run and the expected resource cost. Implement only the approved scope.
+Run existing rubric checks only within their previously approved scope, following the
+handoff protocol below.
+
 ## Checks for this repository
 
 `.repo-policy/policy.yaml` is the policy entrypoint for Codex, Claude, CI and AF Runner checks.
