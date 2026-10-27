@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Repository Policy Linter
@@ -127,7 +127,8 @@ directory exclusions; `.gitignore` is only interpreted by Git, not reimplemented
 
 Keep thematic definitions in `.repo-policy/checks/`, artifact contracts in `contracts/`,
 optional same-ID explanations in `readme/`, and repository-specific Python checkers in `scripts/`.
-Contracts select checks by ID and artifact path. Scope README/AGENTS frontmatter carries
+Contracts select checks by ID, artifact path and optional `when.frontmatter` conditions such
+as `artifact_type: requirement`. Scope README/AGENTS frontmatter carries
 `repo_policy_contracts`; root AGENTS documents ID resolution. Structure, unique IDs and
 navigation are checked automatically by the base engine, independently of file selection.
 See [policy bundles and contracts](docs/policy-bundles.md) for the schema and complete examples.

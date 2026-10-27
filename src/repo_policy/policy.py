@@ -2,7 +2,7 @@
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
 import yaml
@@ -108,10 +108,28 @@ class Policy:
     contracts: dict
     scopes: dict
     directory: str
+    root: Path
+    _frontmatter_cache: dict = field(default_factory=dict, init=False, repr=False)
+
+    def matches_contract(self, contract, name):
+        if not contract_matches(contract, name):
+            return False
+        if "when" not in contract:
+            return True
+        if name not in self._frontmatter_cache:
+            self._frontmatter_cache[name] = read_contract_frontmatter(
+                self.root, name, self.config.get("max_file_bytes", LIMIT)
+            )
+        metadata = self._frontmatter_cache[name]
+        return all(
+            isinstance(metadata.get(key), str)
+            and metadata[key] in (expected if isinstance(expected, list) else [expected])
+            for key, expected in contract["when"]["frontmatter"].items()
+        )
 
     def in_scope(self, check, name):
         scopes = self.scopes[check]
-        return scopes is None or any(contract_matches(c, name) for c in scopes)
+        return scopes is None or any(self.matches_contract(c, name) for c in scopes)
 
     def applies(self, check, name):
         return applies(name, check) and self.in_scope(check["id"], name)
@@ -119,6 +137,56 @@ class Policy:
 
 def contract_matches(contract, name):
     return matches(name, contract["files"]) and not matches(name, contract.get("exclude", []))
+
+
+def read_contract_frontmatter(root, name, limit):
+    """Read only bounded YAML metadata; artifact bodies need not be small UTF-8 text."""
+    with safe_path(root, name).open("rb") as stream:
+        first = stream.readline(max(4, limit + 1))
+        if first.strip() != b"---":
+            return {}
+        size, header = len(first), []
+        if size > limit:
+            raise PolicyError(f"{name}: contract frontmatter exceeds max_file_bytes")
+        while True:
+            line = stream.readline(limit + 1 - size)
+            if not line:
+                raise PolicyError(f"{name}: unterminated contract frontmatter")
+            size += len(line)
+            if size > limit:
+                raise PolicyError(f"{name}: contract frontmatter exceeds max_file_bytes")
+            if line.strip() == b"---":
+                break
+            header.append(line)
+    try:
+        raw = b"".join(header)
+        if b"\0" in raw:
+            raise ValueError()
+        data = yaml_load(raw.decode("utf-8"))
+        if data is None and all(
+            not line.strip() or line.lstrip().startswith(b"#") for line in header
+        ):
+            return {}
+        if not isinstance(data, dict):
+            raise ValueError()
+        return data
+    except (UnicodeError, ValueError, RecursionError, yaml.YAMLError) as exc:
+        raise PolicyError(f"{name}: invalid contract frontmatter") from exc
+
+
+def validate_contract_when(contract, cid):
+    if "when" not in contract:
+        return
+    condition = contract["when"]
+    keys(condition, {"frontmatter"}, cid + ".when")
+    metadata = condition.get("frontmatter")
+    if not isinstance(metadata, dict) or not metadata:
+        structure_error("contract.when.frontmatter must be a nonempty mapping")
+    for key, expected in metadata.items():
+        if not isinstance(key, str) or not key:
+            structure_error("frontmatter condition keys must be nonempty strings")
+        values = [expected] if isinstance(expected, str) else expected
+        strings(values, cid + ".when.frontmatter." + key, nonempty=True)
 
 
 def load_policy(root, config_name):
@@ -181,7 +249,7 @@ def load_policy(root, config_name):
         contract = read_config(resource(root, name, directory, "contracts", ".yaml"))
         keys(
             contract,
-            {"contract_version", "id", "files", "exclude", "entrypoints", "criteria"},
+            {"contract_version", "id", "files", "exclude", "when", "entrypoints", "criteria"},
             name,
         )
         cid = identifier(contract.get("id"))
@@ -196,6 +264,7 @@ def load_policy(root, config_name):
         if not contract["files"]:
             structure_error("contract.files must not be empty")
         patterns(contract.get("exclude", []), cid + ".exclude")
+        validate_contract_when(contract, cid)
         entrypoints = contract.get("entrypoints")
         strings(entrypoints, cid + ".entrypoints", nonempty=True)
         unique(entrypoints, cid + ".entrypoints")
@@ -232,7 +301,7 @@ def load_policy(root, config_name):
                 structure_error("explanation has no declared contract: " + path.name)
     config["rules"] = [r for r in rules if r["id"] in scopes]
     config["plugins"] = [p for p in plugins if p["id"] in scopes]
-    return Policy(config, definitions, contracts, scopes, directory)
+    return Policy(config, definitions, contracts, scopes, directory, root)
 
 
 def read_text(root, name):
@@ -317,7 +386,9 @@ def contract_results(policy, names, diagnostics, all_names, review_targets):
     results = []
     for cid, contract in sorted(policy.contracts.items()):
         # Explicit --files can intentionally select an ignored file absent from Git's all set.
-        targets = [n for n in sorted(set(all_names) | set(names)) if contract_matches(contract, n)]
+        targets = [
+            n for n in sorted(set(all_names) | set(names)) if policy.matches_contract(contract, n)
+        ]
         selected = [n for n in targets if n in names]
         criteria = []
         for criterion in contract["criteria"]:
@@ -333,7 +404,7 @@ def contract_results(policy, names, diagnostics, all_names, review_targets):
                     and (
                         check.get("kind") == "required-path"
                         or d.file in check.get("roots", [])
-                        or contract_matches(contract, d.file)
+                        or policy.matches_contract(contract, d.file)
                     )
                 ]
                 applicable = [n for n in targets if applies(n, check)]

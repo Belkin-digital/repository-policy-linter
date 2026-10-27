@@ -107,6 +107,154 @@ class PolicyTests(unittest.TestCase):
                 self.assertEqual(report["exit_code"], 1)
                 self.assertEqual([d["rule"] for d in report["diagnostics"]], [rule["id"]])
 
+    def test_absent_when_preserves_path_only_selection_without_parsing_metadata(self):
+        self.bundle()
+        self.put("docs/page.md", "---\nbroken: [\n---\n# Still selected by path\n")
+        report = run(self.root)
+        self.assertEqual(report["exit_code"], 0)
+        self.assertEqual(report["contracts"][0]["files"], ["docs/README.md", "docs/page.md"])
+
+    def test_frontmatter_conditions_intersect_paths_exclusions_and_each_other(self):
+        self.bundle()
+        self.contract(
+            when={"frontmatter": {"artifact_type": "requirement", "status": ["draft", "approved"]}},
+            exclude=["docs/archive/*"],
+        )
+        for name, metadata in {
+            "page": "artifact_type: requirement\nstatus: draft",
+            "approved": "artifact_type: requirement\nstatus: approved",
+            "note": "artifact_type: note\nstatus: draft",
+            "closed": "artifact_type: requirement\nstatus: closed",
+            "list": "artifact_type: [requirement]\nstatus: draft",
+            "missing": "status: draft",
+        }.items():
+            self.put(f"docs/{name}.md", f"---\n{metadata}\n---\nNo heading\n")
+        self.put("elsewhere.md", "---\nbroken: [\n")
+        self.put("docs/archive/old.md", "---\nbroken: [\n")
+        report = run(self.root)
+        expected = ["docs/approved.md", "docs/page.md"]
+        self.assertEqual([d["file"] for d in report["diagnostics"]], expected)
+        self.assertEqual(report["contracts"][0]["files"], expected)
+        self.assertEqual(report["contracts"][0]["files_checked"], expected)
+        self.put("docs/README.md", "# Missing navigation\n")
+        self.assertIn(
+            "system-contract-navigation", [d["rule"] for d in run(self.root)["diagnostics"]]
+        )
+
+    def test_invalid_frontmatter_condition_schemas_fail_with_exit_two(self):
+        self.bundle()
+        for condition in (
+            None,
+            {},
+            [],
+            {"expression": "1 / 0"},
+            {"frontmatter": {}},
+            {"frontmatter": []},
+            {"frontmatter": {"": "requirement"}},
+            {"frontmatter": {True: "requirement"}},
+            {"frontmatter": {"artifact_type": ""}},
+            {"frontmatter": {"artifact_type": []}},
+            {"frontmatter": {"artifact_type": ["requirement", 1]}},
+            {"frontmatter": {"artifact_type": True}},
+            {"frontmatter": {"metadata": {"artifact_type": "requirement"}}},
+        ):
+            with self.subTest(condition=condition):
+                self.contract(when=condition)
+                code, report = self.cli("check", "--all", "--format", "json")
+                self.assertEqual(code, 2)
+                self.assertEqual(report["exit_code"], 2)
+
+    def test_missing_and_empty_frontmatter_do_not_match(self):
+        self.bundle()
+        self.contract(when={"frontmatter": {"artifact_type": "requirement"}})
+        for content in (
+            "# No header\n",
+            "---\n---\n# Empty header\n",
+            "---\n \n# Only a comment\n---\n# Page\n",
+            "---\nartifact_type: 123\n---\n# Numeric value\n",
+            "---\nartifact_type: Requirement\n---\n# Case matters\n",
+        ):
+            with self.subTest(content=content):
+                self.put("docs/page.md", content)
+                report = run(self.root)
+                self.assertEqual(report["exit_code"], 0)
+                self.assertEqual(report["contracts"][0]["files"], [])
+
+    def test_invalid_candidate_frontmatter_is_not_silently_excluded(self):
+        self.bundle()
+        self.contract(when={"frontmatter": {"artifact_type": "requirement"}})
+        for metadata in (
+            b"---\nsecret: [PRIVATE-SOURCE-MARKER\n---\n",
+            b"---\nartifact_type: requirement\nartifact_type: note\n---\n",
+            b"---\nartifact_type: &type requirement\nother: *type\n---\n",
+            b"---\n[requirement]\n---\n",
+            b"---\nnull\n---\n",
+            b"---\nartifact_type: requirement\n",
+            b"---\ninvalid: \xff\n---\n",
+            b"---\ninvalid: \0\n---\n",
+        ):
+            with self.subTest(metadata=metadata):
+                self.put("docs/page.md", metadata)
+                code, report = self.cli("check", "--files", "AGENTS.md", "--format", "json")
+                self.assertEqual(code, 2)
+                self.assertIn("contract frontmatter", report["error"])
+                self.assertNotIn("PRIVATE-SOURCE-MARKER", report["error"])
+
+    def test_conditional_frontmatter_reads_bounded_header_without_decoding_body(self):
+        self.bundle(max_file_bytes=128)
+        self.registry(
+            rules=[{"id": "title", "kind": "max-bytes", "bytes": 4096, "files": ["docs/*"]}]
+        )
+        self.contract(when={"frontmatter": {"artifact_type": "requirement"}})
+        for newline in (b"\n", b"\r\n"):
+            with self.subTest(newline=newline):
+                header = newline.join([b"---", b"artifact_type: requirement", b"---", b""])
+                self.put("docs/page.md", header + b"\xff\0" * 1000)
+                self.put("docs/untyped.md", b"\xff\0" * 1000)
+                report = run(self.root)
+                self.assertEqual(report["exit_code"], 0)
+                self.assertEqual(report["contracts"][0]["files"], ["docs/page.md"])
+        self.put("docs/page.md", b"---\nartifact_type: " + b"x" * 128 + b"\n---\n")
+        with self.assertRaisesRegex(PolicyError, "frontmatter exceeds max_file_bytes"):
+            run(self.root)
+        self.bundle(max_file_bytes=1)
+        self.contract(when={"frontmatter": {"artifact_type": "requirement"}})
+        with self.assertRaisesRegex(PolicyError, "frontmatter exceeds max_file_bytes"):
+            run(self.root)
+
+    def test_conditional_plugin_scope_does_not_weaken_global_checks(self):
+        self.bundle()
+        plugin = {
+            "id": "metadata-tool",
+            "format": "json",
+            "files": ["docs/*.md"],
+            "command": [
+                sys.executable,
+                "-c",
+                "import json,sys; print(json.dumps([{'file':n,'line':1,'message':'checked'} for n in sys.argv[1:]]))",
+                "{files}",
+            ],
+        }
+        registry = self.registry(plugins=[plugin])
+        self.contract(
+            when={"frontmatter": {"artifact_type": "requirement"}},
+            criteria=[{"id": "external", "rule": "metadata-tool"}],
+        )
+        self.put("docs/page.md", "---\nartifact_type: requirement\n---\n# Page\n")
+        self.put("docs/note.md", "---\nartifact_type: note\n---\n# Note\n")
+        report = run(self.root, allow_plugins=True)
+        self.assertEqual([d["file"] for d in report["diagnostics"]], ["docs/page.md"])
+        self.manifest(
+            registries=[registry],
+            contracts=[".repo-policy/contracts/document.yaml"],
+            checks=["metadata-tool"],
+        )
+        report = run(self.root, allow_plugins=True)
+        self.assertEqual(
+            [d["file"] for d in report["diagnostics"]],
+            ["docs/README.md", "docs/note.md", "docs/page.md"],
+        )
+
     def test_overlapping_contracts_add_requirements_and_global_checks_remain_active(self):
         self.bundle()
         extra = self.registry(

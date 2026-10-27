@@ -5,7 +5,6 @@ import json
 import os
 
 from .files import git, is_git_root, safe_path
-from .policy import contract_matches
 from .snapshot import file_hash
 
 
@@ -43,7 +42,9 @@ def review_scope(policy, names, all_names, changed):
             c.get("rubric") in changed for c in contract["criteria"] if "rubric" in c
         )
         invalidated = contract_path in changed or rubric_changed
-        applicable = {n for n in set(all_names) | selected if contract_matches(contract, n)}
+        applicable = {
+            n for n in sorted(set(all_names) | selected) if policy.matches_contract(contract, n)
+        }
         if invalidated:
             expanded.update(applicable)
         if any("rubric" in c for c in contract["criteria"]):

@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Bundle configuration and contract navigation
@@ -12,7 +12,7 @@ vendor the engine. Optional directories are created when used, without empty pla
 - `checks/<topic>.yaml`: `version: 2`, `rules` and/or `plugins`; explicitly listed in manifest
   `registries`. Definitions run when referenced in manifest `checks` or a contract criterion.
 - `contracts/<id>.yaml`: explicitly listed in manifest `contracts`; `contract_version: 1`,
-  `id`, nonempty `files`, optional `exclude`, nonempty `entrypoints`, nonempty `criteria`.
+  `id`, nonempty `files`, optional `exclude`/`when`, nonempty `entrypoints`, nonempty `criteria`.
 - `readme/<id>.md`: optional contract explanation. Match the ID exactly; keep normative
   criteria in the YAML and referenced rubrics.
 - `rubrics/<name>.md`: required local resource when a criterion references it.
@@ -36,6 +36,28 @@ criteria:
   - id: metadata
     rule: spec-metadata
 ```
+
+To select by artifact metadata as well as path, add conditions to the contract:
+
+```yaml
+when:
+  frontmatter:
+    artifact_type: specification
+    status: [draft, approved]
+```
+
+All fields must match: a string is exact equality; a nonempty string list is an allowed-value
+set. Keys are literal top-level names and values must be strings, without coercion or regexp
+matching. Missing metadata/fields or non-string values do not match. Without `when`, contracts
+remain path-only. Invalid YAML headers, duplicate keys, aliases and unterminated headers fail
+with exit 2; they cannot silently exclude an artifact. The header is bounded by the configured
+`max_file_bytes`, independent of the body, and needs no Markdown extra.
+
+Apply the same scope to machine checks and rubric handoffs. `--commit` uses committed metadata;
+contract/rubric edits include all currently matching artifacts. Keep unconditional validation
+of required tags and allowed artifact types when removing a tag must not disable obligations.
+Pin a build that supports `when`; older builds reject it. Do not invent nested lookups or
+expression syntax. Keep existing path selectors and navigation entrypoints alongside conditions.
 
 Merge `repo_policy_contracts: [specification]` into the frontmatter of each declared scope
 entrypoint, using an existing `README.md` or `AGENTS.md` at the scope root. Add local Markdown

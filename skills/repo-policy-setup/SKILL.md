@@ -3,7 +3,7 @@ name: repo-policy-setup
 description: Install or update Repository Policy Linter in a chosen existing repository, configure shared policy rules, and integrate agent instructions, pre-commit and CI without copying the engine. Use for local Codex/Claude setup and migration to an AF Runner with the same policy.
 metadata:
   created: '2026-10-26'
-  updated: '2026-10-26'
+  updated: '2026-10-27'
 ---
 
 # Repository Policy Linter setup
@@ -46,7 +46,8 @@ changing other repositories. The engine is an external, versioned dependency; ne
    If enabling Markdown reachability, use the `[markdown]` package extra and choose only
    existing repository-local entrypoints; follow the navigation guidance in that reference.
    Read [references/contracts.md](references/contracts.md) when adding thematic registries,
-   artifact contracts, same-ID explanations, scope navigation or repository-specific Python checks.
+   artifact contracts (including `when.frontmatter` selection), same-ID explanations, scope
+   navigation or repository-specific Python checks.
    The engine always validates policy structure, IDs and navigation; do not configure copies
    of its `system-*` checks. There is no legacy root-config discovery.
 6. Integrate with existing pre-commit/CI by a small targeted merge; never replace their files.

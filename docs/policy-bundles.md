@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Policy bundles and artifact contracts
@@ -116,6 +116,60 @@ File checks use the intersection of contract selectors and check selectors. Mult
 contracts add requirements; none can override another or weaken global checks. Required-path
 checks retain their structural meaning and run even when the artifact is missing or selection
 is empty. Graph checks traverse all Markdown, while contract scope restricts their target set.
+
+### Selecting by frontmatter
+
+Contracts may additionally declare `when.frontmatter`. For example, the same contract can
+select requirements throughout a repository without relying on their directory names:
+
+```yaml
+contract_version: 1
+id: requirement-quality
+files: ['**/*.md']
+when:
+  frontmatter:
+    artifact_type: requirement
+    status: [draft, approved]
+entrypoints: [AGENTS.md]
+criteria:
+  - id: explanation
+    rubric: .repo-policy/rubrics/requirement-quality.md
+```
+
+An artifact with `artifact_type: requirement` and `status: draft` or `status: approved` in its
+opening YAML frontmatter matches. The root navigation entrypoint must declare this contract
+ID, and the referenced rubric must exist, just as for path-only contracts.
+
+- `files`, `exclude` and the metadata conditions are combined: the path must match and
+  **every** named field must match. A string means exact equality; a nonempty list of strings
+  means any of those values. Comparisons are case-sensitive, with no glob/regexp expansion
+  or type coercion. Quote YAML values that would otherwise become booleans, numbers or dates.
+- Field names are literal top-level keys. `metadata.artifact_type` names a literal dotted
+  key, not a nested lookup. Nested predicates and arbitrary expressions are unsupported.
+- Missing frontmatter, empty frontmatter, missing fields and non-string field values do not
+  match. Without `when`, selection retains its existing path-only behavior, including for
+  files that have no parseable frontmatter.
+- An opening `---` must have a closing `---`. Malformed/non-mapping YAML, duplicate keys,
+  aliases, invalid UTF-8 or NUL within the header fail with exit **2** rather than silently
+  skipping the contract. Only path candidates are inspected, after exclusions. Matching
+  candidates are considered even in a partial check, so an unselected malformed header
+  cannot silently make the applicability set incomplete.
+- Headers use LF or CRLF; the selector caches parsed headers per run and bounds them by
+  `max_file_bytes`.
+  The selector does not decode or load the body; machine checks keep their existing body
+  limits. Conditions need only the core PyYAML dependency, not the Markdown extra.
+
+This is an optional extension of `contract_version: 1`; manifests remain `version: 2`.
+Pin an engine build that supports conditions: older builds reject the unknown field. The
+same predicate controls scoped machine checks, trusted plugins, graph targets, contract
+results and rubric requests. Global checks and structural requirements remain in force.
+
+`--commit` reads metadata from the exact committed snapshot, never from dirty working files.
+A contract or rubric edit rechecks all **currently matching** artifacts, including unchanged
+ones. Editing an artifact's type can move it into or out of a contract. If tags are mandatory,
+keep an unconditional base contract/check that validates their presence and allowed values;
+conditional selection alone does not prevent someone from removing/changing a tag. Enforcement
+of approved policy baselines remains the surrounding platform's responsibility.
 
 ## Discovering contracts before editing
 

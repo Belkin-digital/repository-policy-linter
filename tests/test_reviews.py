@@ -90,6 +90,91 @@ class ReviewTests(unittest.TestCase):
             code = main([*args, "--root", str(self.root)])
         return code, output.getvalue(), errors.getvalue()
 
+    def conditional_artifacts(self):
+        self.contract["when"] = {"frontmatter": {"artifact_type": "requirement"}}
+        self.data(".repo-policy/contracts/artifact-quality.yaml", self.contract)
+        self.put("artifacts/one.md", "---\nartifact_type: requirement\n---\n# One\n")
+        self.put("artifacts/two.md", "---\nartifact_type: note\n---\n# Two\n")
+
+    def test_commit_frontmatter_selection_ignores_dirty_metadata_and_policy(self):
+        self.conditional_artifacts()
+        sha = self.commit()
+        committed = self.git("show", sha + ":artifacts/one.md")
+        self.put("artifacts/one.md", "---\nartifact_type: note\n---\nDirty one\n")
+        self.put("artifacts/two.md", "---\nartifact_type: requirement\n---\nDirty two\n")
+        self.contract["when"]["frontmatter"]["artifact_type"] = "note"
+        self.data(".repo-policy/contracts/artifact-quality.yaml", self.contract)
+        report = run(self.root, commit=sha)
+        self.assertEqual(report["contracts"][0]["files"], ["artifacts/one.md"])
+        self.assertEqual([r["artifact"] for r in report["review_requests"]], ["artifacts/one.md"])
+        self.assertEqual(
+            report["review_requests"][0]["artifact_sha256"], hashlib.sha256(committed).hexdigest()
+        )
+
+    def test_rubric_only_commit_requeues_only_matching_frontmatter_artifacts(self):
+        self.conditional_artifacts()
+        initial = self.commit()
+        original = run(self.root, commit=initial)["review_requests"][0]
+        rubric = ".repo-policy/rubrics/quality.md"
+        self.put(rubric, "# Updated review criteria\n")
+        sha = self.commit()
+        report = run(self.root, commit=sha)
+        self.assertEqual(report["changed_files"], [rubric])
+        self.assertIn("artifacts/one.md", report["files_checked"])
+        self.assertNotIn("artifacts/two.md", report["files_checked"])
+        self.assertEqual([r["artifact"] for r in report["review_requests"]], ["artifacts/one.md"])
+        request = report["review_requests"][0]
+        self.assertEqual(request["artifact_sha256"], original["artifact_sha256"])
+        self.assertNotEqual(request["request_id"], original["request_id"])
+        self.assertNotEqual(request["criteria"], original["criteria"])
+
+    def test_condition_only_commit_selects_newly_bound_unchanged_artifacts(self):
+        self.conditional_artifacts()
+        self.commit()
+        self.contract["when"]["frontmatter"]["artifact_type"] = "note"
+        self.data(".repo-policy/contracts/artifact-quality.yaml", self.contract)
+        sha = self.commit()
+        report = run(self.root, commit=sha)
+        self.assertEqual(report["changed_files"], [".repo-policy/contracts/artifact-quality.yaml"])
+        self.assertIn("artifacts/two.md", report["files_checked"])
+        self.assertNotIn("artifacts/one.md", report["files_checked"])
+        self.assertEqual([r["artifact"] for r in report["review_requests"]], ["artifacts/two.md"])
+
+    def test_artifact_type_changes_enter_and_leave_contract_scope(self):
+        self.conditional_artifacts()
+        self.commit()
+        self.put("artifacts/one.md", "---\nartifact_type: note\n---\n# One\n")
+        sha = self.commit()
+        self.assertEqual(run(self.root, commit=sha)["review_requests"], [])
+        self.put("artifacts/one.md", "---\nartifact_type: requirement\n---\n# One\n")
+        sha = self.commit()
+        self.assertEqual(
+            [r["artifact"] for r in run(self.root, commit=sha)["review_requests"]],
+            ["artifacts/one.md"],
+        )
+
+    def test_conditional_local_and_af_commit_reports_are_identical(self):
+        self.conditional_artifacts()
+        sha = self.commit()
+        output = self.root.parent / "conditional-output"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = af_main(
+                [
+                    "--root",
+                    str(self.root),
+                    "--commit",
+                    sha,
+                    "--session-root",
+                    str(self.root.parent),
+                    "--output-dir",
+                    str(output),
+                ]
+            )
+        self.assertEqual(code, 0)
+        expected = run(self.root, commit=sha)
+        self.assertEqual(json.loads((output / "report.json").read_text()), expected)
+        self.assertEqual([r["artifact"] for r in expected["review_requests"]], ["artifacts/one.md"])
+
     def test_initial_commit_requests_have_stable_byte_hashes_and_no_machine_error(self):
         sha = self.commit()
         report = run(self.root, commit=sha)
