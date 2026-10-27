@@ -156,6 +156,9 @@ increment. For example, `1.0.0-rc.1 < 1.0.0`, but `1.0.0+one` equals `1.0.0+two`
   the version. The rule validates the authoritative source, not synchronization with other files
   or the meaning of a change; choose the appropriate patch/minor/major increment explicitly.
 
+Version checks run after opt-in fixes: if a newline repair creates a tracked change on a clean
+checkout, the resulting working tree must also have a version higher than HEAD (from 0.3.1).
+
 Like `required-path`, this structural check runs even with empty or deletion-only selections.
 Path/contract selectors and global exclusions do not disable it; a reasoned exception matching
 its literal `path` can exempt it. `--base` affects file selection, not this per-commit baseline.

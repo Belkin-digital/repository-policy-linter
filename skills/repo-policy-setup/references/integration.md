@@ -19,7 +19,7 @@ package just because a name matches this unreleased project. Example helper call
 example source/digest with the actual built wheel; an illustrative URL is not a published artifact):
 
 ```text
-python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.3.0-py3-none-any.whl#sha256=<actual-64-hex-digest>'
+python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.3.1-py3-none-any.whl#sha256=<actual-64-hex-digest>'
 ```
 
 Preview first, then repeat with `--apply`. Target dependency files are left unchanged if they
@@ -34,7 +34,7 @@ manager or an offline wheelhouse; `==` pins alone are not a full supply-chain lo
 ## Markdown navigation policies
 
 For `markdown-reachable`, install the same approved distribution with its `[markdown]` extra.
-The helper accepts `repository-policy-linter[markdown]==0.3.0` or
+The helper accepts `repository-policy-linter[markdown]==0.3.1` or
 `repository-policy-linter[markdown] @ <approved-wheel-URL>#sha256=<actual-digest>` as well as
 the existing base requirement forms. Keep parser and transitive dependency pins identical
 in local, CI and AF environments. No extra is needed for the base rules.
@@ -84,7 +84,7 @@ See [official local-hook guidance](https://pre-commit.com/#repository-local-hook
 
 If the repository requires a version increase per commit, explicitly add the built-in
 `version-increment` rule with a canonical version source and an extraction regex containing
-`(?P<version>...)`. Require an engine build from 0.3.0 onward. It runs even for deletion-only
+`(?P<version>...)`. Require an engine build from 0.3.1 onward. It runs even for deletion-only
 changes, uses HEAD for pending tracked changes and first-parent comparison for clean/commit
 checks. Stage new files before the final check; unrelated untracked files do not change the
 baseline. Fetch at least two commits in CI; missing history is an error. Do not enable this rule

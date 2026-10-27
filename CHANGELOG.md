@@ -5,6 +5,11 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.3.1 — 2026-10-27
+
+- Evaluate the version gate after opt-in fixes, so newline repairs on a clean checkout also
+  require a version increment before their changes can pass the machine gate.
+
 ## 0.3.0 — 2026-10-27
 
 - Built-in `version-increment` check with strict SemVer precedence, local Git baselines and

@@ -110,20 +110,6 @@ def _run(
             exists = False
         if not exists:
             diagnostics.append(diagnostic(rule, name, "required path is missing or is a symlink"))
-    version_rules = [
-        rule
-        for rule in rules
-        if rule["kind"] == "version-increment" and not excepted(rule, rule["path"])
-    ]
-    if version_rules:
-        git_root = git_root or root
-        baseline = version_baseline(git_root, commit, parent)
-        for rule in version_rules:
-            found, summary = check_version(
-                root, git_root, rule, baseline, config.get("max_file_bytes", LIMIT)
-            )
-            diagnostics.extend(found)
-            repository_checks.append(summary)
     graph_rules = [rule for rule in rules if rule["kind"] == "markdown-reachable"]
     if graph_rules:
         # Link deletion can orphan unchanged documents; graph rules always read all docs.
@@ -195,6 +181,20 @@ def _run(
                     f"{plugin['id']}: external command requires --allow-plugins after review"
                 )
             diagnostics.extend(run_plugin(plugin, root, chosen))
+    version_rules = [
+        rule
+        for rule in rules
+        if rule["kind"] == "version-increment" and not excepted(rule, rule["path"])
+    ]
+    if version_rules:
+        git_root = git_root or root
+        baseline = version_baseline(git_root, commit, parent)
+        for rule in version_rules:
+            found, summary = check_version(
+                root, git_root, rule, baseline, config.get("max_file_bytes", LIMIT)
+            )
+            diagnostics.extend(found)
+            repository_checks.append(summary)
     contracts = []
     requests = review_requests(root, policy, review_targets, commit=commit, parent=parent)
     if policy.contracts:

@@ -274,3 +274,31 @@ class VersionTests(unittest.TestCase):
             )
         self.assertEqual(code, 1)
         self.assertEqual(json.loads(buffer.getvalue())["schema_version"], 1)
+
+    def test_fix_on_clean_checkout_requires_bump_after_creating_tracked_change(self):
+        self.put("README.md", "Missing newline")
+        self.put(
+            ".repo-policy/policy.yaml",
+            yaml.safe_dump(
+                {
+                    "version": 2,
+                    "rules": [
+                        self.rule,
+                        {
+                            "id": "newline",
+                            "kind": "final-newline",
+                            "safe_fix": True,
+                            "files": ["README.md"],
+                        },
+                    ],
+                }
+            ),
+        )
+        self.commit()
+        report = run(self.root, fix=True)
+        self.assertEqual(report["fixed"], ["README.md"])
+        self.assertEqual(report["exit_code"], 1)
+        self.assertEqual([d["rule"] for d in report["diagnostics"]], ["release-version"])
+        self.assertEqual(report["repository_checks"][0]["baseline"], "head")
+        self.version("0.1.1")
+        self.assertEqual(run(self.root)["exit_code"], 0)

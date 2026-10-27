@@ -10,7 +10,7 @@ One versioned `.repo-policy/` bundle and engine, the same diagnostics on every e
 Python 3.11+; one core runtime dependency (PyYAML); no telemetry, network calls or LLM service.
 Optional Markdown reachability checks use the `[markdown]` extra (markdown-it-py and mdurl).
 
-**Status:** working version 0.3.0. Public source:
+**Status:** working version 0.3.1. Public source:
 [Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).
 Build the distributable wheel from this checkout. The package is not published on PyPI;
 do not assume `pip install repository-policy-linter` will retrieve this project.
@@ -72,7 +72,7 @@ Install the **external package**, not the source tree:
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.3.0-py3-none-any.whl
+/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.3.1-py3-none-any.whl
 cd /path/to/target
 .venv-policy/bin/repo-policy init
 .venv-policy/bin/repo-policy check --all
@@ -88,7 +88,7 @@ an internal wheelhouse using pip's `--no-index --find-links`; dependency install
 network access otherwise, while the engine itself does not.
 
 For the optional `markdown-reachable` rule, install the same approved wheel with its extra:
-`python -m pip install '/absolute/path/to/repository_policy_linter-0.3.0-py3-none-any.whl[markdown]'`.
+`python -m pip install '/absolute/path/to/repository_policy_linter-0.3.1-py3-none-any.whl[markdown]'`.
 Pin the extra and transitive dependencies in the target toolchain for local/CI/AF parity.
 This checkout's dev lock already includes the Markdown parser.
 
@@ -165,7 +165,7 @@ distribution; it is intentionally separate from the engine wheel.
 Open the selected target repo in its agent, then invoke:
 
 ```text
-Codex: $repo-policy-setup Install the linter in this repository using the supplied 0.3.0 wheel.
+Codex: $repo-policy-setup Install the linter in this repository using the supplied 0.3.1 wheel.
 Claude Code: /repo-policy-setup Install the linter in this repository using the supplied wheel.
 ```
 
