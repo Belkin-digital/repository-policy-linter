@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 repo_policy_root: .repo-policy
 repo_policy_contracts: [documentation]
 ---
@@ -19,6 +19,12 @@ telemetry to the core. External tools are explicit, trusted plugins; never claim
 Safe fixes remain opt-in, per-file, byte-preserving except for a final newline.
 Keep the installable skill independent of the engine source. Do not deploy into other repos,
 publish packages or create platform objects unless the user authorized that scope.
+
+Before every project commit, increment the package version and update the changelog.
+Use a minor bump for compatible features and a patch bump for fixes or documentation/test-only
+changes. Keep `pyproject.toml`, `repo_policy.__version__`, the project's `uv.lock` entry and
+current installation examples in sync. Package versions and policy/report schema versions
+are independent. Follow the [versioning and release procedure](docs/releasing.md).
 
 ## Checks for this repository
 

@@ -5,10 +5,15 @@ updated: 2026-10-27
 
 # Changelog
 
-## 0.1.0 — 2026-10-26
+## 0.2.0 — 2026-10-27
 
 - Optional `when.frontmatter` contract selection by exact string fields or allowed-value
   lists, shared by machine/plugin scopes and hashed rubric review requests in commit snapshots.
+- Synchronized package/runtime/lock versions and current installation examples; require a
+  version increment and changelog update before every project commit.
+
+## 0.1.0 — 2026-10-26
+
 - Exact local-object `--commit` snapshots, first-parent change selection and check-only execution.
 - Hashed per-artifact/contract `review_requests`, full invalidation on contract/shared-rubric
   changes, machine-success versus pending-review separation and harness reviewer/repair guidance.
