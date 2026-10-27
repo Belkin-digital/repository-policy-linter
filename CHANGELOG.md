@@ -5,6 +5,17 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.4.0 — 2026-10-27
+
+- Repository-scoped plugins run even for empty or deletion-only selections and may report
+  declared missing metadata files. File-scoped plugins retain their existing behavior.
+- Optional frontmatter `preserve_keys` compares existing typed values with a local Git baseline,
+  including nested skill metadata and exact committed snapshots.
+- Enforce release/version consistency, core dependency/import constraints, standalone skill
+  boundaries, and locked check-only hook/CI configuration through the project's own policy.
+- Carry universal rule-design, rubric approval and integration guidance in the standalone
+  setup skill and its generated target instructions; document rule coverage and remaining limits.
+
 ## 0.3.2 — 2026-10-27
 
 - Require evaluating each new rule for simple, reliable linter enforcement, and obtain user

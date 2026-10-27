@@ -19,6 +19,11 @@ while editing. [.repo-policy/policy.yaml](.repo-policy/policy.yaml) is the polic
 Before editing artifacts, read `repo_policy_contracts` in the scope's README/AGENTS frontmatter.
 Resolve ID to `.repo-policy/contracts/<id>.yaml` and optional `.repo-policy/readme/<id>.md`,
 or run `repo-policy explain <id>`. Contract selectors remain authoritative.
+For each new rule ask whether the linter can enforce it reasonably, reliably and simply.
+If yes, implement it through the shared policy/engine with appropriate existing tools.
+Always ask the user before implementing new rubric checks, changing their criteria or expanding
+coverage/triggers; explain scope, frequency and review cost. Run existing rubric checks only within
+their approved scope. Preserve known creation metadata; establish missing dates from evidence.
 Review configured external commands before passing `--allow-plugins`.
 For a commit, run `repo-policy check --commit <SHA> --format json`. Exit 0 covers machine checks.
 The current harness must dispatch every `review_requests` entry to a separate read-only subagent

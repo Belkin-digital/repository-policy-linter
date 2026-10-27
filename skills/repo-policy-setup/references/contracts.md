@@ -22,7 +22,7 @@ vendor the engine. Optional directories are created when used, without empty pla
 Check/plugin and contract IDs share a global namespace. Criterion IDs are local to their
 contract. IDs use `[a-z][a-z0-9-]{0,63}`; `engine` and `system-*` are reserved. Each criterion
 has `id` and exactly one `rule: <check-id>` or `rubric: <repo-relative-md-path>`.
-Repository-level `required-path` and `version-increment` checks retain their structural meaning
+Repository-level `required-path`, `version-increment` and `scope: repository` plugins retain their structural meaning
 even when the artifact selection is empty. File checks use the intersection of contract selectors
 and check selectors. All matching contracts add requirements. Keep general checks active via
 the manifest's `checks` list.
@@ -87,6 +87,17 @@ Scripts execute with caller permissions and are not sandboxed. Never copy packag
 into `scripts/`. Rubric criteria remain `needs_review` and produce hashed `review_requests` for
 the current harness. Follow the [review handoff](reviews.md); the core performs no LLM calls,
 dispatches no agents and invents no verdicts. Pending review does not itself fail machine checks.
+
+For cross-file/required metadata checks, engine 0.4.0 supports `scope: repository` on a plugin.
+It runs even with no selected/input files; `files`/`exclude` declare permitted diagnostic paths,
+including missing required files. File selection/global exclusions/contract selectors do not
+waive it; explicit reasoned exceptions can. Review commands before `--allow-plugins`. The checker
+must not expect `.git` in committed snapshots. Use ordinary file scope for artifact checks.
+
+For immutable creation fields, a `frontmatter` rule may opt into `preserve_keys: [created]`
+with the same `mapping_path` as its required keys. It compares typed values at the same Git path;
+Git history is then required. It does not infer rename lineage, original authorship or semantic
+freshness. Preserve existing dates and establish missing values from evidence.
 
 After configuration, inspect `explain <id>`, run all/changed checks and repository tests.
 A partial check's exit 0 does not establish full contract acceptance. Report any non-satisfied

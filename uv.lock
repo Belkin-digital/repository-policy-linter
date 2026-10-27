@@ -171,7 +171,7 @@ wheels = [
 
 [[package]]
 name = "repository-policy-linter"
-version = "0.3.2"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "pyyaml" },
@@ -185,6 +185,7 @@ markdown = [
 [package.dev-dependencies]
 dev = [
     { name = "markdown-it-py" },
+    { name = "packaging" },
     { name = "pre-commit" },
     { name = "ruff" },
 ]
@@ -199,6 +200,7 @@ provides-extras = ["markdown"]
 [package.metadata.requires-dev]
 dev = [
     { name = "markdown-it-py", specifier = "==4.0.0" },
+    { name = "packaging", specifier = "==26.3" },
     { name = "pre-commit", specifier = "==4.3.0" },
     { name = "ruff", specifier = "==0.14.2" },
 ]

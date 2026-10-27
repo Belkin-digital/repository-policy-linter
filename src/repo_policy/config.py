@@ -168,7 +168,7 @@ def validate(config):
             "max-bytes": {"bytes"},
             "syntax": set(),
             "required-keys": {"keys"},
-            "frontmatter": {"keys", "mapping_path"},
+            "frontmatter": {"keys", "mapping_path", "preserve_keys"},
             "markdown-reachable": {"roots"},
         }
         if not isinstance(kind, str) or kind not in KINDS:
@@ -207,6 +207,10 @@ def validate(config):
             strings(rule.get("keys", []), "keys")
         if kind == "frontmatter":
             strings(rule.get("mapping_path", []), "frontmatter.mapping_path")
+            preserved = rule.get("preserve_keys", [])
+            strings(preserved, "frontmatter.preserve_keys")
+            if len(preserved) != len(set(preserved)):
+                raise PolicyError("frontmatter.preserve_keys must be unique")
         if kind == "markdown-reachable":
             roots = rule.get("roots")
             strings(roots, "markdown-reachable.roots", nonempty=True)
@@ -232,10 +236,13 @@ def validate(config):
                 "success_codes",
                 "diagnostic_codes",
                 "pattern",
+                "scope",
             },
             plugin["id"],
         )
         strings(plugin.get("command"), "plugin.command", nonempty=True)
+        if plugin.get("scope", "files") not in ("files", "repository"):
+            raise PolicyError("plugin.scope must be files or repository")
         if plugin["command"].count("{files}") != 1:
             raise PolicyError("plugin.command must contain one standalone {files} argument")
         if plugin.get("format") not in ("json", "ruff", "regex"):

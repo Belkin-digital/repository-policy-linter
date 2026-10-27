@@ -28,5 +28,5 @@ jobs:
       - run: uv run --frozen repo-policy check --all --allow-plugins
       - run: uv run --frozen pre-commit validate-config
       - run: uv run --frozen pre-commit run --all-files
-      - run: uv build
+      - run: uv run --frozen uv build
       - run: uv run --frozen python scripts/smoke_wheel.py

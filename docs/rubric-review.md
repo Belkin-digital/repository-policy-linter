@@ -33,6 +33,12 @@ the snapshot or fetch history. In working-copy mode, pending tracked changes com
 HEAD; a clean tracked checkout compares against HEAD's first parent. Untracked-only files do
 not indicate a pending commit. See the [version rule contract](configuration.md#version-increments).
 
+Frontmatter `preserve_keys` uses the same local baseline to protect existing typed metadata
+at the same path. Repository-scoped plugins run even with empty selection and can report
+declared missing metadata; they still require `--allow-plugins` and have no `.git` in the
+snapshot. These machine checks do not add or grade rubric criteria. See the
+[metadata rules](configuration.md#preserving-frontmatter-values) and [plugin scopes](plugins.md#repository-scoped-checks).
+
 Use the Git repository root. `--commit` is mutually exclusive with `--all`, `--changed`, `--files`
 and incompatible with `--base`; it is available only for `check`, not `fix` (including dry-run).
 The JSON report adds `selection: commit`, `commit`, `base_commit` and `changed_files` (including

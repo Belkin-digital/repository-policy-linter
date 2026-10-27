@@ -124,6 +124,36 @@ introducing unsupported top-level skill fields. These rules require presence onl
 date format, ordering and actual freshness are not validated. `fix` does not generate dates;
 an agent must establish their provenance and edit the document explicitly.
 
+## Preserving frontmatter values
+
+From engine 0.4.0, a frontmatter rule may declare `preserve_keys: [created]`. The keys refer
+to the mapping selected by `mapping_path`, so native skill rules preserve `metadata.created`.
+The default empty list keeps presence-only behavior and needs no Git metadata.
+
+```yaml
+rules:
+  - id: skill-dates
+    kind: frontmatter
+    files: ['skills/**/SKILL.md']
+    mapping_path: [metadata]
+    keys: [created, updated]
+    preserve_keys: [created]
+```
+
+After opted-in fixes, compare each selected, in-scope artifact to the same Git path in the
+baseline. Use HEAD for pending tracked changes and the first parent on a clean checkout or
+with `--commit`, just as for `version-increment`. Values must retain both YAML type and value;
+even replacing a date scalar with a quoted string changes its type. Removing a previously
+present preserved key also fails. Other fields and body content may change normally.
+
+An initial/new path or an old document without that metadata/key can be initialized. This
+does not follow rename ancestry or prove the initial value's authorship. Missing Git history,
+invalid baseline YAML and oversized/unsafe baseline files fail with exit 2. Both complete file
+sources are bounded by `max_file_bytes`; current syntax/key failures remain ordinary diagnostics.
+Existing-value changes produce a normal diagnostic under the frontmatter rule; the report schema
+stays unchanged. Global/rule exclusions and reasoned exceptions retain their ordinary file-rule
+meaning. Nothing invents a date, chooses `updated` freshness or alters metadata automatically.
+
 ## Version increments
 
 Engine 0.3.0 adds `version-increment`, an opt-in repository check. Enable it explicitly in

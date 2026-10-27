@@ -1,9 +1,14 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Rubric review handoff for the current harness
+
+Before implementing new rubric checks, changing criteria or expanding coverage/automatic
+triggers, always obtain user approval after explaining scope, frequency and expected review
+cost. First consider simple reliable machine enforcement, following [rule design](rule-design.md).
+This protocol executes existing approved obligations; it does not authorize creating new ones.
 
 Use `repo-policy check --commit <SHA> --format json` to check a committed change. It reads the
 exact local Git snapshot and compares it with the first parent; the initial commit selects all

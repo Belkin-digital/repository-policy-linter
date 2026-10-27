@@ -16,3 +16,5 @@ rules:
   keys:
   - created
   - updated
+  preserve_keys:
+  - created

@@ -47,6 +47,11 @@ handoff protocol below.
 ## Checks for this repository
 
 `.repo-policy/policy.yaml` is the policy entrypoint for Codex, Claude, CI and AF Runner checks.
+The [rule coverage map](docs/rule-coverage.md) records machine enforcement and its limits.
+The reviewed `project-integrity` repository plugin checks release metadata, current installation
+examples, core dependency/import boundaries, skill independence and canonical hook/CI settings,
+including empty selections. It parses source/configuration; it does not prove arbitrary runtime
+behavior, user permission or semantic quality. Its packaging parser is a pinned dev dependency.
 Here the engine is the package under development: `uv sync --frozen` installs this
 checkout with the dev tools pinned in `uv.lock`. Do not add a circular wheel dependency
 or copy the engine to configure its own source repository. Other repositories install
@@ -92,7 +97,9 @@ keep these fields under `metadata` so the native skill schema remains valid.
 Preserve an existing `created`; update `updated` on a meaningful document change.
 When introducing missing metadata, use confirmed authorship or the first addition
 to this repository in Git, and record the source. Do not invent an unknown date.
-The policy checks field presence; it does not prove date accuracy or refresh dates.
+The policy checks field presence and preserves existing typed `created` values against the
+same path in Git. It does not prove original date accuracy, follow rename ancestry or decide
+when a meaningful change requires refreshing `updated`.
 Date repair is an explicit agent edit, outside the CLI's safe newline-only `fix`.
 
 ## Navigation

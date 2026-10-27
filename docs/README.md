@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 repo_policy_contracts: [documentation, rubric-review-guide]
 ---
 
@@ -16,6 +16,7 @@ Start with the [project overview and quick start](../README.md).
 
 ## Using and extending policies
 
+- [AGENTS rule coverage and machine-check boundaries](rule-coverage.md)
 - [Policy bundles, contracts and navigation by ID](policy-bundles.md)
 - [Commit snapshots and rubric review handoff](rubric-review.md)
 - [Configuration and rule contracts](configuration.md)

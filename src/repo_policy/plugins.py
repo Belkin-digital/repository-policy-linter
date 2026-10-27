@@ -51,8 +51,9 @@ def _run(command, root, timeout):
 
 
 def run_plugin(plugin, root, files):
+    repository = plugin.get("scope", "files") == "repository"
     chosen = [name for name in files if applies(name, plugin)]
-    if not chosen:
+    if not chosen and not repository:
         return []
     command = []
     for arg in plugin["command"]:
@@ -92,7 +93,7 @@ def run_plugin(plugin, root, files):
             elif name.startswith("./"):
                 name = name[2:]
             safe_path(root, name)
-            if name not in chosen:
+            if not (applies(name, plugin) if repository else name in chosen):
                 raise PolicyError("plugin diagnostic outside selected file set")
             if type(line) is not int or type(column) is not int or line < 1 or column < 1:
                 raise PolicyError("invalid plugin location")

@@ -3,6 +3,7 @@ from pathlib import Path
 from . import __version__
 from .config import CONFIG_NAME, LIMIT
 from .files import matches, safe_path, select_files
+from .history import check_preserved_frontmatter, git_baseline
 from .markdown_graph import check_reachability
 from .model import PolicyError
 from .plugins import run_plugin
@@ -10,7 +11,7 @@ from .policy import contract_results, load_policy, navigation_diagnostics
 from .reviews import review_requests, review_scope, working_changes
 from .rules import append_newline, applies, check_text, diagnostic
 from .snapshot import commit_snapshot
-from .versions import check_version, version_baseline
+from .versions import check_version
 
 
 def run(
@@ -169,26 +170,56 @@ def _run(
             text += "\r\n" if b"\r\n" in raw else "\n"
             found = [d for rule in text_rules for d in check_text(rule, name, text)]
         diagnostics.extend(found)
+    repository_names = None
     for plugin in config.get("plugins", []):
+        repository = plugin.get("scope", "files") == "repository"
+        if repository and repository_names is None:
+            repository_names, _ = select_files(root, {"exclude": []}, mode="all")
         chosen = [
             name
-            for name in names
-            if not excepted(plugin, name) and policy.in_scope(plugin["id"], name)
+            for name in (repository_names if repository else names)
+            if not excepted(plugin, name) and (repository or policy.in_scope(plugin["id"], name))
         ]
-        if any(applies(name, plugin) for name in chosen):
+        if repository or any(applies(name, plugin) for name in chosen):
             if not allow_plugins:
                 raise PolicyError(
                     f"{plugin['id']}: external command requires --allow-plugins after review"
                 )
-            diagnostics.extend(run_plugin(plugin, root, chosen))
+            diagnostics.extend(
+                d for d in run_plugin(plugin, root, chosen) if not excepted(plugin, d.file)
+            )
+            if repository:
+                repository_checks.append(
+                    {
+                        "rule": plugin["id"],
+                        "kind": "plugin",
+                        "scope": "repository",
+                        "files_checked": [n for n in chosen if applies(n, plugin)],
+                    }
+                )
     version_rules = [
         rule
         for rule in rules
         if rule["kind"] == "version-increment" and not excepted(rule, rule["path"])
     ]
-    if version_rules:
+    preserved = [
+        (rule, name)
+        for rule in rules
+        if rule["kind"] == "frontmatter" and rule.get("preserve_keys")
+        for name in names
+        if policy.applies(rule, name)
+        and not excepted(rule, name)
+        and not any(d.rule == rule["id"] and d.file == name for d in diagnostics)
+    ]
+    if version_rules or preserved:
         git_root = git_root or root
-        baseline = version_baseline(git_root, commit, parent)
+        baseline = git_baseline(git_root, commit, parent)
+        for rule, name in preserved:
+            diagnostics.extend(
+                check_preserved_frontmatter(
+                    root, git_root, rule, name, baseline[0], config.get("max_file_bytes", LIMIT)
+                )
+            )
         for rule in version_rules:
             found, summary = check_version(
                 root, git_root, rule, baseline, config.get("max_file_bytes", LIMIT)

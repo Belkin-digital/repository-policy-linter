@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "repository-policy-linter"
-version = "0.3.2"
+version = "0.4.0"
 description = "Local, language-agnostic repository policy checks with explicit tool plugins"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,7 +19,7 @@ repo-policy = "repo_policy.cli:main"
 repo-policy-af = "repo_policy.af:main"
 
 [dependency-groups]
-dev = ["ruff==0.14.2", "pre-commit==4.3.0", "markdown-it-py==4.0.0"]
+dev = ["ruff==0.14.2", "pre-commit==4.3.0", "markdown-it-py==4.0.0", "packaging==26.3"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/repo_policy"]

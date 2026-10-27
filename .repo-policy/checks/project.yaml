@@ -1,0 +1,16 @@
+version: 2
+plugins:
+- id: project-integrity
+  scope: repository
+  command: [python, .repo-policy/scripts/check_project.py, '{files}']
+  format: json
+  files:
+  - pyproject.toml
+  - uv.lock
+  - CHANGELOG.md
+  - README.md
+  - docs/releasing.md
+  - .pre-commit-config.yaml
+  - .github/workflows/ci.yml
+  - src/repo_policy/*.py
+  - skills/repo-policy-setup/**

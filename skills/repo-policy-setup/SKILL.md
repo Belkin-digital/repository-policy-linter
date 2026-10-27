@@ -18,6 +18,15 @@ Work only in the repository selected by the user. Installing this skill does not
 changing other repositories. The engine is an external, versioned dependency; never copy
 `src/repo_policy` into the target or invent a published package/remote URL.
 
+For every proposed check or rule, first ask whether the linter can enforce it reasonably,
+reliably and simply. If yes, implement it in the shared policy/engine, using existing tools
+where appropriate. Always obtain explicit user approval before implementing new rubric checks,
+changing their criteria or expanding coverage/triggers: explain scope, frequency and review cost.
+Run existing rubric checks only within their approved scope. Read
+[rule design and portable guidance](references/rule-design.md) when translating agent instructions
+into policy, and carry these principles into the target's maintained AGENTS/CLAUDE instructions.
+This skill is self-contained; the target agent does not need this project's root `AGENTS.md`.
+
 1. Read applicable `AGENTS.md`, `CLAUDE.md`, contribution rules and existing dependency,
    pre-commit and CI configuration. Inspect Git status; preserve unrelated edits, comments,
    YAML anchors and symlinks. Determine the repository root explicitly.
@@ -50,10 +59,15 @@ changing other repositories. The engine is an external, versioned dependency; ne
    navigation or repository-specific Python checks.
    The engine always validates policy structure, IDs and navigation; do not configure copies
    of its `system-*` checks. There is no legacy root-config discovery.
+   Use repository-scoped plugins for deterministic checks spanning multiple files or required
+   metadata, including empty/deletion-only selections. With engine 0.4.0+, use frontmatter
+   `preserve_keys` when the repository requires immutable creation metadata and has local history.
 6. Integrate with existing pre-commit/CI by a small targeted merge; never replace their files.
    Run the same check locally and in CI; keep hooks check-only. Preserve AGENTS/CLAUDE linking
    conventions (including generated `.claude` files); add one short invocation reference at
    the maintained source, rather than competing policy text in several files.
+   Existing managed instruction blocks are preserved by the helper; inspect them and merge
+   the universal design/approval guidance when updating an already configured target.
 7. Run `repo-policy check --all`, then `repo-policy check --changed`; use `--format json` for
    automation. Run repository-mandated tests and the affected CI/pre-commit checks. Establish
    an initial report before changing policies to avoid a sudden unreviewed enforcement gate.

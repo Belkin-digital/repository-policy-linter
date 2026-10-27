@@ -9,6 +9,8 @@ rules:
   keys:
   - created
   - updated
+  preserve_keys:
+  - created
 - id: markdown-navigation
   kind: markdown-reachable
   files:
