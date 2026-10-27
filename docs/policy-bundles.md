@@ -114,8 +114,9 @@ Contract file selection uses the same case-sensitive POSIX `fnmatch` dialect as 
 levels. This is not path regexp or gitignore; use explicit `exclude` for suppressions.
 File checks use the intersection of contract selectors and check selectors. Multiple matching
 contracts add requirements; none can override another or weaken global checks. Required-path
-checks retain their structural meaning and run even when the artifact is missing or selection
-is empty. Graph checks traverse all Markdown, while contract scope restricts their target set.
+and version-increment checks retain their structural meaning and run even when the artifact is
+missing or selection is empty. Graph checks traverse all Markdown, while contract scope restricts
+their target set.
 
 ### Selecting by frontmatter
 

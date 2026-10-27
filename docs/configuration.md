@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Configuration version 2
@@ -69,8 +69,9 @@ plugins: []
 ```
 
 Every rule has a unique stable `id`, `kind`, optional `severity` (`error`, `warning`, `info`),
-`files` (default `['**/*']`), `exclude` and optional generic `message`. Required-path uses a literal
-`path` and ignores `files`/`exclude`; reasoned exceptions can exempt it explicitly. Top-level
+`files` (default `['**/*']`), `exclude` and optional generic `message`. Required-path and
+version-increment use a literal `path` and ignore `files`/`exclude`; reasoned exceptions can
+exempt them explicitly. Top-level
 `exclude` filters file selection, not structural requirements. Exceptions match exact rule/plugin
 ids; for external tools exempt the entire plugin for that path, or use the tool's native suppression.
 
@@ -122,6 +123,51 @@ string dates such as `metadata: {created: '2026-10-26', updated: '2026-10-26'}` 
 introducing unsupported top-level skill fields. These rules require presence only: values,
 date format, ordering and actual freshness are not validated. `fix` does not generate dates;
 an agent must establish their provenance and edit the document explicitly.
+
+## Version increments
+
+Engine 0.3.0 adds `version-increment`, an opt-in repository check. Enable it explicitly in
+the manifest or a thematic registry; it is not a default requirement for every repository.
+
+```yaml
+rules:
+  - id: package-version-increment
+    kind: version-increment
+    path: pyproject.toml
+    pattern: '^version = "(?P<version>[^"\r\n]+)"\r?$'
+```
+
+`path` is a canonical literal repository-relative file. `pattern` uses Python `re.MULTILINE`
+and must contain a named `version` group. It must match the bounded UTF-8 source exactly once;
+the extracted value must be SemVer: three numeric components, optional prerelease and build
+metadata. Leading zeros in numeric components/prerelease identifiers are rejected. Numeric
+components and prereleases follow SemVer precedence; build metadata does not constitute an
+increment. For example, `1.0.0-rc.1 < 1.0.0`, but `1.0.0+one` equals `1.0.0+two` for ordering.
+
+- With pending tracked/index changes, compare the working version against HEAD. Staged additions
+  and deletions count; untracked-only files do not. Stage new files before a pre-commit check.
+- On a clean tracked checkout, compare against HEAD's first parent. With `--commit C`, compare
+  the exact C snapshot against C's first parent, ignoring dirty files and using local Git objects.
+- An unborn/root commit, or the first introduction of this version file, requires a valid
+  version but has no prior value to exceed. A missing Git repository, missing parent/objects or
+  invalid/oversized baseline is an execution error (exit 2), never a successful bootstrap.
+- A missing/invalid current version, equality or decrease produces a normal diagnostic at the
+  version file, line/column 1:1, exit 1 at the configured severity threshold. `fix` never raises
+  the version. The rule validates the authoritative source, not synchronization with other files
+  or the meaning of a change; choose the appropriate patch/minor/major increment explicitly.
+
+Like `required-path`, this structural check runs even with empty or deletion-only selections.
+Path/contract selectors and global exclusions do not disable it; a reasoned exception matching
+its literal `path` can exempt it. `--base` affects file selection, not this per-commit baseline.
+Both the version file and baseline are bounded by `max_file_bytes`. The core performs no fetch;
+provide sufficient local history (for CI on the latest commit, checkout `fetch-depth: 2`).
+No external plugin permission or additional runtime dependency is needed.
+
+Schema-version-1 JSON adds a `repository_checks` entry with `kind: version-increment`, `rule`,
+`path`, `baseline` (`head`, `first_parent` or `initial`), nullable `base_commit`,
+`previous_version` and `current_version`. Null previous version also denotes first introduction
+of the source. Top-level `files_checked` remains the requested selection. Local and AF use the
+same baseline and report; policies without this rule retain their report shape and behavior.
 
 ## Markdown reachability
 

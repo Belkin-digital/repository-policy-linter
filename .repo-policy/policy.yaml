@@ -8,6 +8,7 @@ registries:
 - .repo-policy/checks/markdown.yaml
 - .repo-policy/checks/skills.yaml
 - .repo-policy/checks/python.yaml
+- .repo-policy/checks/versioning.yaml
 checks:
 - readme
 - skill
@@ -25,6 +26,7 @@ checks:
 - claude-shared-instructions
 - python-ruff
 - setup-assets
+- package-version-increment
 contracts:
 - .repo-policy/contracts/documentation.yaml
 - .repo-policy/contracts/setup-skill.yaml

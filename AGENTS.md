@@ -25,6 +25,9 @@ Use a minor bump for compatible features and a patch bump for fixes or documenta
 changes. Keep `pyproject.toml`, `repo_policy.__version__`, the project's `uv.lock` entry and
 current installation examples in sync. Package versions and policy/report schema versions
 are independent. Follow the [versioning and release procedure](docs/releasing.md).
+The built-in `package-version-increment` policy check enforces a higher SemVer in
+`pyproject.toml`: pending tracked changes compare against HEAD; clean checkouts and
+`--commit` compare against the checked commit's first parent. CI needs both commits locally.
 
 ## Checks for this repository
 

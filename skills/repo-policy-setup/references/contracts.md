@@ -22,8 +22,10 @@ vendor the engine. Optional directories are created when used, without empty pla
 Check/plugin and contract IDs share a global namespace. Criterion IDs are local to their
 contract. IDs use `[a-z][a-z0-9-]{0,63}`; `engine` and `system-*` are reserved. Each criterion
 has `id` and exactly one `rule: <check-id>` or `rubric: <repo-relative-md-path>`.
-File checks use the intersection of contract selectors and check selectors. All matching
-contracts add requirements. Keep general checks active via the manifest's `checks` list.
+Repository-level `required-path` and `version-increment` checks retain their structural meaning
+even when the artifact selection is empty. File checks use the intersection of contract selectors
+and check selectors. All matching contracts add requirements. Keep general checks active via
+the manifest's `checks` list.
 
 Contract example (requires check `spec-metadata` in a loaded registry):
 

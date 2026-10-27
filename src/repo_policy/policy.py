@@ -396,13 +396,17 @@ def contract_results(policy, names, diagnostics, all_names, review_targets):
                 status = "needs_review" if review_targets.get(cid) else "not_evaluated"
             else:
                 check = policy.definitions[criterion["rule"]]
-                structural = check.get("kind") in {"required-path", "markdown-reachable"}
+                structural = check.get("kind") in {
+                    "required-path",
+                    "markdown-reachable",
+                    "version-increment",
+                }
                 problems = [
                     d
                     for d in diagnostics
                     if d.rule == check["id"]
                     and (
-                        check.get("kind") == "required-path"
+                        check.get("kind") in {"required-path", "version-increment"}
                         or d.file in check.get("roots", [])
                         or policy.matches_contract(contract, d.file)
                     )

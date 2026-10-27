@@ -10,7 +10,7 @@ One versioned `.repo-policy/` bundle and engine, the same diagnostics on every e
 Python 3.11+; one core runtime dependency (PyYAML); no telemetry, network calls or LLM service.
 Optional Markdown reachability checks use the `[markdown]` extra (markdown-it-py and mdurl).
 
-**Status:** working version 0.2.0. Public source:
+**Status:** working version 0.3.0. Public source:
 [Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).
 Build the distributable wheel from this checkout. The package is not published on PyPI;
 do not assume `pip install repository-policy-linter` will retrieve this project.
@@ -50,6 +50,12 @@ also checks Python formatting. Both hooks are check-only. A missing required pat
 when the selected changed-file set is empty. The policy hook always runs a full check, including
 deletion-only commits. Scratch files under `work/` are excluded.
 
+The built-in `package-version-increment` rule requires a higher SemVer before each commit.
+Pending tracked changes compare against HEAD; clean checkouts and `--commit` compare against
+the first parent. The rule runs even for deletion-only/empty selections and never edits the
+version. CI fetches both commits. See [versioning](docs/releasing.md) and the
+[rule contract](docs/configuration.md#version-increments).
+
 Markdown also requires `created` and `updated` in frontmatter; native `SKILL.md` files
 store them under `metadata`. Existing creation dates are preserved. This is a presence
 check, not date-format/chronology validation or automatic timestamp maintenance.
@@ -66,7 +72,7 @@ Install the **external package**, not the source tree:
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.2.0-py3-none-any.whl
+/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.3.0-py3-none-any.whl
 cd /path/to/target
 .venv-policy/bin/repo-policy init
 .venv-policy/bin/repo-policy check --all
@@ -82,7 +88,7 @@ an internal wheelhouse using pip's `--no-index --find-links`; dependency install
 network access otherwise, while the engine itself does not.
 
 For the optional `markdown-reachable` rule, install the same approved wheel with its extra:
-`python -m pip install '/absolute/path/to/repository_policy_linter-0.2.0-py3-none-any.whl[markdown]'`.
+`python -m pip install '/absolute/path/to/repository_policy_linter-0.3.0-py3-none-any.whl[markdown]'`.
 Pin the extra and transitive dependencies in the target toolchain for local/CI/AF parity.
 This checkout's dev lock already includes the Markdown parser.
 
@@ -159,7 +165,7 @@ distribution; it is intentionally separate from the engine wheel.
 Open the selected target repo in its agent, then invoke:
 
 ```text
-Codex: $repo-policy-setup Install the linter in this repository using the supplied 0.2.0 wheel.
+Codex: $repo-policy-setup Install the linter in this repository using the supplied 0.3.0 wheel.
 Claude Code: /repo-policy-setup Install the linter in this repository using the supplied wheel.
 ```
 

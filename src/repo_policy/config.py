@@ -16,6 +16,7 @@ SYSTEM_CHECKS = {
 }
 KINDS = {
     "required-path": "Require a literal file or directory, in every selection mode.",
+    "version-increment": "Require a higher SemVer than HEAD or the checked commit's first parent.",
     "forbidden-path": "Reject matching selected paths.",
     "forbidden-text": "Reject a regular expression in UTF-8 text (multiline mode).",
     "required-text": "Require a regular expression in each matched UTF-8 file.",
@@ -159,6 +160,7 @@ def validate(config):
         common = {"id", "kind", "files", "exclude", "severity", "message"}
         options = {
             "required-path": {"path", "type"},
+            "version-increment": {"path", "pattern"},
             "forbidden-path": set(),
             "forbidden-text": {"pattern"},
             "required-text": {"pattern"},
@@ -178,6 +180,18 @@ def validate(config):
             relative(rule.get("path"), "required-path.path")
             if rule.get("type", "file") not in ("file", "directory"):
                 raise PolicyError("required-path.type must be file or directory")
+        if kind == "version-increment":
+            relative(rule.get("path"), "version-increment.path")
+            if rule["path"] != PurePosixPath(rule["path"]).as_posix():
+                raise PolicyError("version-increment.path must be canonical")
+            if not isinstance(rule.get("pattern"), str):
+                raise PolicyError("version-increment requires a string pattern")
+            try:
+                pattern = re.compile(rule["pattern"], re.MULTILINE)
+            except (KeyError, TypeError, re.error) as exc:
+                raise PolicyError("version-increment requires a valid pattern") from exc
+            if "version" not in pattern.groupindex:
+                raise PolicyError("version-increment.pattern requires a named version group")
         if kind in ("forbidden-text", "required-text"):
             if not isinstance(rule.get("pattern"), str):
                 raise PolicyError("pattern must be a string")

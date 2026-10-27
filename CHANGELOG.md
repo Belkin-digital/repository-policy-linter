@@ -5,6 +5,12 @@ updated: 2026-10-27
 
 # Changelog
 
+## 0.3.0 — 2026-10-27
+
+- Built-in `version-increment` check with strict SemVer precedence, local Git baselines and
+  exact commit handling; unchanged/decreased versions fail even with empty/deletion-only selection.
+- Enable the version gate in this repository's policy and fetch the first parent in CI.
+
 ## 0.2.0 — 2026-10-27
 
 - Optional `when.frontmatter` contract selection by exact string fields or allowed-value

@@ -1,0 +1,6 @@
+version: 2
+rules:
+- id: package-version-increment
+  kind: version-increment
+  path: pyproject.toml
+  pattern: '^version = "(?P<version>[^"\r\n]+)"\r?$'

@@ -10,6 +10,7 @@ from .policy import contract_results, load_policy, navigation_diagnostics
 from .reviews import review_requests, review_scope, working_changes
 from .rules import append_newline, applies, check_text, diagnostic
 from .snapshot import commit_snapshot
+from .versions import check_version, version_baseline
 
 
 def run(
@@ -48,6 +49,7 @@ def run(
                 commit=snapshot.commit,
                 parent=snapshot.parent,
                 changed_paths=snapshot.changed,
+                git_root=root,
             )
             snapshot.verify()
             return report
@@ -76,6 +78,7 @@ def _run(
     commit=None,
     parent=None,
     changed_paths=None,
+    git_root=None,
 ):
     policy = load_policy(root, config_name)
     config = policy.config
@@ -107,6 +110,20 @@ def _run(
             exists = False
         if not exists:
             diagnostics.append(diagnostic(rule, name, "required path is missing or is a symlink"))
+    version_rules = [
+        rule
+        for rule in rules
+        if rule["kind"] == "version-increment" and not excepted(rule, rule["path"])
+    ]
+    if version_rules:
+        git_root = git_root or root
+        baseline = version_baseline(git_root, commit, parent)
+        for rule in version_rules:
+            found, summary = check_version(
+                root, git_root, rule, baseline, config.get("max_file_bytes", LIMIT)
+            )
+            diagnostics.extend(found)
+            repository_checks.append(summary)
     graph_rules = [rule for rule in rules if rule["kind"] == "markdown-reachable"]
     if graph_rules:
         # Link deletion can orphan unchanged documents; graph rules always read all docs.
@@ -127,7 +144,7 @@ def _run(
         active = [
             r
             for r in rules
-            if r["kind"] not in ("required-path", "markdown-reachable")
+            if r["kind"] not in ("required-path", "markdown-reachable", "version-increment")
             and policy.applies(r, name)
             and not excepted(r, name)
         ]

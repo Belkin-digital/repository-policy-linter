@@ -13,7 +13,7 @@ from .files import PRUNED, safe_path
 from .model import PolicyError
 
 
-def git_read(root, *args, input=None, stdout=subprocess.PIPE):
+def git_read(root, *args, input=None, stdout=subprocess.PIPE, missing_ok=False):
     env = dict(os.environ)
     for name in (
         "GIT_DIR",
@@ -45,6 +45,8 @@ def git_read(root, *args, input=None, stdout=subprocess.PIPE):
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise PolicyError("cannot read local Git commit objects") from exc
+    if missing_ok and result.returncode == 1:
+        return None
     if result.returncode:
         raise PolicyError("cannot read commit or history; required Git objects must be local")
     return result.stdout

@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Commit checks and rubric review requests
@@ -25,6 +25,13 @@ including the committed policy, contracts, rubrics and Python check scripts. It 
 over the source tree, stages files, follows checkout hooks/filters, applies export attributes or
 fetches missing objects. Dirty working files, index edits and untracked files do not participate.
 Missing objects/history fail with exit 2; a shallow non-root commit is not mistaken for a root.
+
+When a policy enables the built-in `version-increment` rule, the core compares the version
+source in this snapshot with the first parent's local Git blob. The structural check runs even
+for empty/deletion-only selections and needs no plugin permission. It does not add `.git` to
+the snapshot or fetch history. In working-copy mode, pending tracked changes compare against
+HEAD; a clean tracked checkout compares against HEAD's first parent. Untracked-only files do
+not indicate a pending commit. See the [version rule contract](configuration.md#version-increments).
 
 Use the Git repository root. `--commit` is mutually exclusive with `--all`, `--changed`, `--files`
 and incompatible with `--base`; it is available only for `check`, not `fix` (including dry-run).
