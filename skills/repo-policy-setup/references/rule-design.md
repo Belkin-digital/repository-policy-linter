@@ -1,54 +1,108 @@
 ---
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
-# Turning repository instructions into checks
+# Discovery and rule design
 
-For every new rule or acceptance requirement ask: "Can the linter enforce this reasonably,
-reliably and simply?" If yes, implement enforcement in the shared policy/engine. Prefer existing
-built-ins, native specialist tools and small reviewed repository-specific adapters. Store Python
-adapters in `.repo-policy/scripts/` and register their thematic modules explicitly. Keep one policy
-and pinned engine/toolchain for local agents, hooks, CI and AF. Native tools remain check-only;
-review their commands before enabling `--allow-plugins`. They run with caller permissions.
+Use the narrow installation route for install/update tasks. Use the full inventory and catalog
+when translating instructions or extending coverage. A large existing repository does not by
+itself authorize an audit of every document. Preserve accepted work when continuing a migration.
 
-Record the exact fact a check proves. Parsed metadata, AST checks and native tool diagnostics
-are appropriate for structural facts. The presence of words in instructions does not prove that
-an agent followed them; a changed test file does not prove meaningful compatibility coverage.
-Keep semantic judgment, permission evidence and operational execution with the responsible
-harness/person when no simple reliable check exists. Explain the limitation and record coverage.
+## Scope and baseline
 
-Before implementing a new rubric check, changing its criteria or expanding its scope/triggers,
-always obtain explicit user approval. Explain what deterministic checks cannot establish,
-which artifacts/criteria will be reviewed, when reviews run and the expected resource cost.
-Implement only the approved scope. Do not add automatic review costs through a starter template.
-Existing approved obligations use the [review handoff](reviews.md); machine exit 0 is not rubric
-acceptance. Keep complete hash-matched requests/verdicts in ignored run output, outside policy.
+Resolve the selected Git root, current revision and status. Read applicable AGENTS/CLAUDE,
+contribution guidance, existing policy, dependency manager, hook/CI and automation registry.
+Search for existing generators, exporters and link/mirror tools by function and content as well
+as filename. Reading a procedure as a normative source does not execute its commands or MCP work.
 
-Apply portable principles according to the selected repository's actual conventions:
+Identify the maintained canonical instructions, generated/imported copies and symlinks. Before
+touching existing files record the relevant current bytes/hash, modes, symlink targets and index
+state, including affected untracked data. HEAD alone cannot identify the user's preexisting dirty
+changes. Keep scoped snapshots with appropriate access; do not publish secrets/raw input or scan
+other workspaces to install one repository. See [preservation](data-preservation.md).
 
-- Preserve unrelated edits, comments, local configuration and existing integration conventions.
-  Merge hooks/CI and instruction sections; use disposable repositories for integration tests.
-- Keep engine installation external to the skill and target sources. Resolve an actual immutable
-  distribution and dependency lock; skill installation does not authorize an engine upgrade,
-  another repository's deployment, publication or platform object creation.
-- Before editing contracted artifacts, inspect scope IDs and resolve their YAML/rubrics and
-  optional same-ID explanations. Selectors determine applicability; pointers aid discovery.
-- Keep maintained documents reachable through the repository's chosen entrypoints when adopting
-  Markdown navigation. If it uses date metadata, preserve known `created`; native skill dates
-  belong under `metadata`. Establish missing dates from evidence; do not invent authorship.
-  With local Git history, `preserve_keys: [created]` enforces existing typed values. It cannot
-  prove original authorship or decide whether a prose change warrants refreshing `updated`.
-- Adopt version checks only when the repository requires them. Choose its authoritative source,
-  keep mirrors/current changelog/examples consistent, and fetch required history in CI. This
-  project's Python layout, dependency count and per-commit version bumps are local conventions.
-- Use `scope: repository` for cross-file metadata checks which must run with empty selection;
-  use ordinary file plugins for selected-artifact checks. Review code and bound its inputs.
-  Both are explicit trusted plugins, not a sandbox or a substitute for an approved policy baseline.
-- Keep fixes opt-in. The engine's safe fixer only adds final newlines; date repair, version
-  selection and semantic fixes remain explicit edits. Rerun the relevant checks afterward.
+For updates, record why a new engine/guidance version is needed. Preserve the dependency manager
+and current pins unless the task requires a change. Inventory output can summarize classes with
+representative files; do not dump thousands of paths into the conversation.
 
-Copy the universal decision rule and rubric approval requirement into the maintained target
-AGENTS/CLAUDE source. Explain its policy entrypoint, ID navigation, check commands, plugin trust
-and already-approved review handoff. Configure repository-specific requirements from its own
-instructions; do not rely on an agent finding the upstream project's AGENTS file.
+## Artifact and source inventory
+
+Classify by role, not extension: maintained author documents, native skills, generated indexes,
+mirrors, external originals, released reports, archives and temporary material have different
+obligations. Record paths/type/audience, native schema, canonical source, editability, known
+history, navigation role and existing validator/generator. Preserve legitimate variants of a type;
+an export file can be a UI artifact without becoming a technical report to satisfy a web schema.
+
+For each normative source record its path, section, revision/hash, role and applicability.
+Root instructions, scoped rules, commands, skills, README, templates and normative data can all
+matter. A generated copy is not another authority; a template example is not a required enum,
+calendar, status or field. Resolve source precedence and conflicts before enforcing a new meaning.
+An inventoried source hash proves identity and inclusion, not full coverage of its contents.
+
+Keep one canonical definition of executable requirements: policy/contract or the existing
+validator's data. Instructions retain IDs, links, explanation and procedures. Generate duplicate
+representations or check their consistency; do not maintain separate handwritten enums. A link
+to SSOT may be sufficient for a short document; requiring it to repeat a table can be a checker bug.
+
+## Inputs and proof classes
+
+| Class | Required input | Appropriate implementation / limit |
+| --- | --- | --- |
+| M: snapshot fact | Selected files or full graph | Schema, arithmetic, IDs, existing links; does not prove meaning |
+| D: change fact | Exact baseline/current bytes, paths and modes | Preservation/history mechanism; a current file alone is insufficient |
+| X: external fact | Explicit revision-bound evidence snapshot | Separately acquired evidence, then offline validation |
+| O: action or judgment | Responsible person or trusted harness | Procedure, real authorization or acceptance; not automatically a rubric |
+
+M/D/X are machine candidates only with sufficient inputs. For required X input, define trigger,
+revision, scope, collection time, completeness/pagination and provenance. Missing/stale input fails
+when applicable; it need not block unrelated edits when the trigger is absent. Test both branches.
+No hidden GitHub/Tracker/MCP network call belongs in routine lint. Hashes alone do not authenticate
+the collection or prove its freshness. Leave unimplemented X visibly uncovered.
+
+For every proposed rule ask whether simple, reliable machine enforcement is reasonable. Prefer
+an installed built-in, a specialist check-only tool, then a small adapter using existing parsers
+and public project APIs. A shared missing input/interface may justify an upstream mechanism;
+domain policy stays in the target. Do not copy engine code or search another clone for a missing
+baseline. Keep publication/PR/merge authority separate and prepare the exact diff/destination.
+
+## Rule design card
+
+This is an installation work product, **not engine configuration or a new CLI schema**:
+
+```yaml
+id: preserve-creation-metadata
+source: rules/document-lifecycle.md#creation
+source_revision: recorded-source-hash
+class: D
+fact: existing typed creation metadata is unchanged
+applies_to: active authored documents; native skills use their own metadata mapping
+inputs: exact selected baseline and current content
+implementation: installed built-in where sufficient; otherwise reviewed adapter
+missing_input: fail when applicable
+does_not_prove: original authorship or meaningful updated-date freshness
+examples: [valid-edit, changed-value, removed-key, legitimate-native-skill]
+legacy: selected adoption mode and its decision source
+state: proposed
+```
+
+Also specify selectors/ID uniqueness scope, severity/enforcement, exclusions, canonical definition,
+positive and nearby valid counterexamples, negative cases and tests. A check name is not coverage.
+Track proposed/accepted/implemented/verified/deferred requirements separately. New requirements,
+contradictions or unknown facts need their actual evidence/owner decision; do not invent dates,
+owners, durations, priorities or test results for a green report.
+
+Verify glob semantics in the installed engine: `*` can match `/`; a middle `**/` must not be
+assumed to match zero directories. Test active card, nested appendix, template, index, archive,
+released copy, raw input and native SKILL where applicable. For [conditional contracts](contracts.md),
+unconditionally validate mandatory classification metadata so deleting/changing a tag cannot
+disable its obligations. No regex, nested lookup or type coercion is implied by `when.frontmatter`.
+
+Use structured YAML/Markdown parsing, preserving strict header/type/duplicate-key behavior.
+An example AC heading inside a fence is not an authored AC section. Do not prohibit extra fields
+or reclassify correct artifacts without a source requirement. [Rule library](rule-library.md)
+provides optional candidates; choose and adapt them, never import them as universal obligations.
+
+For rubric proposals, use [reviews](reviews.md) only in approved scope. Explain why deterministic
+checks are insufficient, what is reviewed, when it reruns and the expected resource cost.
+An instruction-migration request does not silently authorize quality reviews of every file.

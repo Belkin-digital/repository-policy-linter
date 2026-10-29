@@ -1,9 +1,13 @@
 ---
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Integration details
+
+Use this stage after [discovery](rule-design.md). Installation-only configures the selected
+checks; migration additionally uses [preservation/adoption](data-preservation.md) and the
+[acceptance record](acceptance.md). Neither route automatically enables new rubric or a blocking gate.
 
 ## External dependency and portability
 
@@ -20,14 +24,14 @@ or a wheel with an immutable digest. Never infer publication from a source versi
 For an available registry version, preview the helper with:
 
 ```text
-python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter==0.4.1'
+python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter==0.4.2'
 ```
 
 For a version not yet published, use the actual built wheel instead (replace the example
 source/digest; an illustrative URL is not a published artifact):
 
 ```text
-python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl#sha256=<actual-64-hex-digest>'
+python3 <skill>/scripts/configure.py --root <target> --engine 'repository-policy-linter @ file:///absolute/path/to/repository_policy_linter-0.4.2-py3-none-any.whl#sha256=<actual-64-hex-digest>'
 ```
 
 Preview first, then repeat with `--apply`. Target dependency files are left unchanged if they
@@ -39,10 +43,73 @@ For a portable rollout publish the exact wheel in an approved internal artifact 
 HTTPS URL + digest in local/CI/AF installation. Lock transitive dependencies through the target's
 manager or an offline wheelhouse; `==` pins alone are not a full supply-chain lock.
 
+Record four independent results: distribution identity (version/source commit/digest), availability
+through its declared channel, cold installation without a previous editable engine, and operation
+of the target integration. Source-build is another valid selected route: pin the exact source and
+build backend/dependencies, build in an isolated tree and record the resulting wheel digest.
+A local cache or feature branch is not a durable artifact channel for another machine.
+
+Use the existing tool manager/lock. Include needed extras, parsers, specialist tools and transitive
+dependencies; include build tools for source-build. The canonical launcher must run that environment
+and put its tools on PATH, so plugin `python` does not depend on an arbitrary shell. Verify actual
+package version/import location and distribution identity; an equal version string alone does
+not prove equal installed bytes. Do not introduce a second launcher if the manager already provides it.
+
+### Capability selection
+
+These are engine capabilities, separate from the version of this standalone skill:
+
+| Capability | Released engine baseline / constraint |
+| --- | --- |
+| Version-2 bundles, exact `--commit`, hashed review requests | 0.1.0 onward; use the selected version's schema |
+| `when.frontmatter` exact strings / allowed lists | 0.2.0 onward; unconditional tag validation still needed |
+| Version increment after opt-in fixes | 0.3.1 onward; Git baseline/history required |
+| `scope: repository`, `preserve_keys` | 0.4.0 onward; preservation is typed and same-path |
+| Arbitrary plugin before/after Git context | Not supplied by 0.4.x; do not invent `context` or `{context}` configuration |
+
+Verify the actual distribution and version-specific API before applying examples. Committed
+plugin snapshots have no `.git`; do not locate a different checkout to manufacture history.
+For a general missing capability, prepare an isolated upstream change with compatibility tests;
+keep domain rules in the consumer. Updating a pin needs a real available artifact and the task's
+authority; submitting a PR does not authorize merge, tag, package publication or another rollout.
+
+## Helper preview, conflicts and writes
+
+`configure.py` remains a standard-library bootstrap, independent of the installed engine. Default
+mode previews; `--apply` scaffolds only. Its existing `applied`, `actions`, `engine` and
+`portable_source` fields remain, with additional evidence boundaries:
+
+| Output | Meaning |
+| --- | --- |
+| `source_kind` | Syntactic `registry`, `https_wheel` or `local_wheel`; not a reachability result |
+| `verification` | Availability `not_verified`, cold install and CI `not_run`; helper does not perform them |
+| `portable_source` | Legacy non-file-URL hint only; true is not verified portability |
+| `actions[].matches` | Exact requested bytes, or managed-section bytes, match existing content |
+| `reconciliation_required` | Preserved differences requiring inspection; not permission to overwrite |
+| `write_preflight` | Best-effort filesystem access check, not a transaction or tool-permission guarantee |
+| `planned_writes` / `completed_writes` | Requested write set versus writes actually completed |
+
+`applied: true` means the requested scaffold writes completed; preserved conflicts and runtime/CI
+verification can still be outstanding. Existing policy/dependency files and managed sections are
+never replaced. An existing bundle does not receive an undeclared starter module. Append preserves
+the exact existing instruction prefix, BOM, line endings, trailing blank lines and mode.
+
+All planned writes are preflighted before applying. A detected denial blocks all writes. An
+unexpected mid-write failure returns exit 2 with JSON listing completed/remaining writes and an
+uncertain file; inspect their bytes and permission boundaries before retry. Do not assume rollback
+or silently redirect the canonical source to another folder. Invalid symlinks/markers are rejected.
+
+By default the delivered AGENTS/CLAUDE section covers machine checks, navigation, rule design and
+the requirement to leave existing reviews pending. For already-approved rubric obligations, add
+`--rubric-handoff` together with `--instructions` to request full harness instructions. This does
+not create rubric contracts or authorize their implementation/run. If a block already exists,
+inspect its mismatch and merge approved changes at the maintained source; do not downgrade its
+existing approved review obligations. See [instruction migration](instruction-migration.md).
+
 ## Markdown navigation policies
 
 For `markdown-reachable`, install the same approved distribution with its `[markdown]` extra.
-The helper accepts `repository-policy-linter[markdown]==0.4.1` or
+The helper accepts `repository-policy-linter[markdown]==0.4.2` or
 `repository-policy-linter[markdown] @ <approved-wheel-URL>#sha256=<actual-digest>` as well as
 the existing base requirement forms. Keep parser and transitive dependency pins identical
 in local, CI and AF environments. No extra is needed for the base rules.
@@ -86,6 +153,8 @@ exist in that hook environment. Run `pre-commit validate-config` and `pre-commit
 Install Git hooks only when target setup authorization covers it; never overwrite custom hook
 scripts. pre-commit normally stashes unstaged changes; direct CLI always checks working-tree
 contents, not an independent index snapshot. Hook-only checks are not the platform trust boundary.
+Describe each existing step separately: a newly added read-only policy step does not make an
+older mutating hook read-only. Preserve its chosen behavior and report which steps write or stage.
 See [official local-hook guidance](https://pre-commit.com/#repository-local-hooks).
 
 ## CI
@@ -105,6 +174,12 @@ Establish baseline violations in a nonblocking pilot before enforcing. Do not ru
 in CI. Keep plugins in a separately reviewed, pinned environment, with no credentials for fork runs.
 Engine/runtime changes and policy changes must be visible in review.
 
+Observation uses an explicit pilot or nonblocking integration, not an invented engine flag or a
+forged success exit. Retain the actual failed report while the accepted adoption/repair plan is
+resolved. Enable blocking only within the agreed rule/adoption scope. First-parent comparison
+can use two commits; arbitrary merge-base checks may require more history. Local, index and exact
+commit checks are distinct; neither an engine CI run nor workflow YAML proves target CI passed.
+
 ## Agent instructions
 
 Keep definitions in `.repo-policy/` and explicitly connect thematic registries/contracts through
@@ -113,6 +188,8 @@ AGENTS guidance. Add commands and links to the maintained AGENTS/CLAUDE source, 
 symlink/import/generated conventions;
 the helper refuses a symlink rather than replacing it. If `.claude` is generated, update its source
 and run the existing generator only when authorized. Record the clean/known-violations baseline.
+Keep agent procedures and authorization requirements at their maintained source. Before moving
+instructions or changing mirrors/roots, follow [the migration recipe](instruction-migration.md).
 
 ## AF Runner / platform observation
 

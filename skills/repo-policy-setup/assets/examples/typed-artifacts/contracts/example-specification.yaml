@@ -1,0 +1,11 @@
+contract_version: 1
+id: example-specification
+files: ['specs/*.md']
+exclude: [specs/README.md, 'specs/**/README.md']
+when:
+  frontmatter:
+    artifact_type: specification
+entrypoints: [specs/README.md]
+criteria:
+  - id: metadata
+    rule: example-specification-metadata

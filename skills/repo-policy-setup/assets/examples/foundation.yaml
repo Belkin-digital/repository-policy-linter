@@ -1,0 +1,15 @@
+version: 2
+rules:
+  - id: example-readme
+    kind: required-path
+    path: README.md
+    type: file
+  - id: example-data-syntax
+    kind: syntax
+    files: ['**/*.json', '**/*.yaml', '**/*.yml']
+  - id: example-authored-newline
+    kind: final-newline
+    files: ['docs/*.md']
+    exclude: ['docs/raw/**', 'docs/releases/**']
+    safe_fix: false
+    severity: warning

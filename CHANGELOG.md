@@ -1,9 +1,23 @@
 ---
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Changelog
+
+## 0.4.2 — 2026-10-29
+
+- Refine setup guidance from installation feedback: separate installation, rule migration,
+  artifact adoption and acceptance; document canonical sources, preserved originals,
+  historical results, instruction moves, terminology profiles and actual runtime capabilities.
+- Add an opt-in rule library with runnable basic/metadata/type/navigation examples and
+  project adapter recipes, including proof limits, adoption choices and negative cases.
+- Fix bootstrap appends to preserve existing instruction bytes, line endings and modes;
+  report preserved conflicts, unverified distribution claims, write preflight and partial failure.
+- Keep the default instruction block focused on machine checks; offer full handoff guidance
+  for already-approved rubric obligations through `--rubric-handoff`, without new criteria.
+- Test bootstrap preservation/failures and optional examples in disposable repositories,
+  including exact commit inputs and classification-tag removal.
 
 ## 0.4.1 — 2026-10-27
 

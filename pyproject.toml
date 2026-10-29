@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "repository-policy-linter"
-version = "0.4.1"
+version = "0.4.2"
 description = "Local, language-agnostic repository policy checks with explicit tool plugins"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -1,0 +1,14 @@
+version: 2
+rules:
+  - id: example-specification-metadata
+    kind: frontmatter
+    files: ['specs/*.md']
+    exclude: [specs/README.md, 'specs/**/README.md']
+    keys: [id, title]
+plugins:
+  - id: example-specification-type
+    command: [python, .repo-policy/scripts/check_spec_type.py, '{files}']
+    format: json
+    files: ['specs/*.md']
+    exclude: [specs/README.md, 'specs/**/README.md']
+    timeout: 30

@@ -1,0 +1,7 @@
+version: 2
+rules:
+  - id: example-document-navigation
+    kind: markdown-reachable
+    roots: [AGENTS.md]
+    files: ['docs/*.md']
+    exclude: ['docs/raw/**', 'docs/releases/**']

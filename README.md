@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Repository Policy Linter
@@ -10,7 +10,7 @@ One versioned `.repo-policy/` bundle and engine, the same diagnostics on every e
 Python 3.11+; one core runtime dependency (PyYAML); no telemetry, network calls or LLM service.
 Optional Markdown reachability checks use the `[markdown]` extra (markdown-it-py and mdurl).
 
-**Status:** working version 0.4.1. Public source:
+**Status:** working version 0.4.2. Public source:
 [Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).
 Install an available version from the official
 [PyPI project](https://pypi.org/project/repository-policy-linter/), or build a wheel from a
@@ -82,14 +82,14 @@ For an available PyPI release, install the exact approved version in an isolated
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install 'repository-policy-linter==0.4.1'
+/path/to/target/.venv-policy/bin/python -m pip install 'repository-policy-linter==0.4.2'
 ```
 
 If that version has not been published, build and install its wheel instead:
 
 ```bash
 python3 -m venv /path/to/target/.venv-policy
-/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl
+/path/to/target/.venv-policy/bin/python -m pip install /absolute/path/to/repository_policy_linter-0.4.2-py3-none-any.whl
 cd /path/to/target
 .venv-policy/bin/repo-policy init
 .venv-policy/bin/repo-policy check --all
@@ -105,8 +105,8 @@ an internal wheelhouse using pip's `--no-index --find-links`; dependency install
 network access otherwise, while the engine itself does not.
 
 For the optional `markdown-reachable` rule, install the same approved wheel with its extra:
-`python -m pip install 'repository-policy-linter[markdown]==0.4.1'`, or
-`python -m pip install '/absolute/path/to/repository_policy_linter-0.4.1-py3-none-any.whl[markdown]'`
+`python -m pip install 'repository-policy-linter[markdown]==0.4.2'`, or
+`python -m pip install '/absolute/path/to/repository_policy_linter-0.4.2-py3-none-any.whl[markdown]'`
 for an unpublished version.
 Pin the extra and transitive dependencies in the target toolchain for local/CI/AF parity.
 This checkout's dev lock already includes the Markdown parser.
@@ -184,14 +184,26 @@ distribution; it is intentionally separate from the engine wheel.
 Open the selected target repo in its agent, then invoke:
 
 ```text
-Codex: $repo-policy-setup Install an available PyPI release or the supplied 0.4.1 wheel.
+Codex: $repo-policy-setup Install an available PyPI release or the supplied 0.4.2 wheel.
 Claude Code: /repo-policy-setup Install the linter in this repository using the supplied wheel.
 ```
 
-The agent inspects repository rules, pins the external dependency, adds/merges config, pre-commit
-and CI, updates maintained agent instructions, runs checks and target tests. No engine copy and
-no mass rollout. The helper defaults to preview and preserves pre-existing files; detailed
-integration guidance is in the [skill](skills/repo-policy-setup/SKILL.md).
+The [skill](skills/repo-policy-setup/SKILL.md) distinguishes installation from migration of
+existing instructions. It routes through discovery/design, integration and acceptance, with
+optional guidance for historical data, instruction mirrors and terminology. Installation does
+not itself authorize rewriting artifacts, enabling new blocking rules or creating rubric checks.
+The agent pins an available external engine and tests the selected local/CI integration.
+
+The standalone helper previews changes, preserves existing policy/dependency files and managed
+instruction sections, and appends without changing existing bytes or modes. Its JSON report
+identifies preserved differences and partial writes; it does not claim to install the runtime
+or verify CI. Full instructions for already-approved rubric obligations are opt-in.
+
+The [optional rule library](skills/repo-policy-setup/references/rule-library.md) provides tested
+examples for basic checks, authored/native metadata, guarded artifact types and Markdown
+navigation. It also describes adapter candidates such as original integrity, generated registry
+drift and report arithmetic, with proof limits, adoption choices and negative cases. Select and
+adapt candidates explicitly; the starter enables none of this library and adds no rubric criteria.
 
 These discovery locations and invocation forms follow the official
 [Codex customization guide](https://learn.chatgpt.com/docs/customization/overview) and

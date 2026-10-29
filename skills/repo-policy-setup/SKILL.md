@@ -1,86 +1,84 @@
 ---
 name: repo-policy-setup
-description: Install or update Repository Policy Linter in a chosen existing repository, configure shared policy rules, and integrate agent instructions, pre-commit and CI without copying the engine. Use for local Codex/Claude setup and migration to an AF Runner with the same policy.
+description: Install or update Repository Policy Linter in a chosen repository, or migrate its approved instructions into machine checks with controlled adoption of existing artifacts. Use for policy setup, rule migration and local/CI/AF integration; ordinary editing under an existing policy does not require this skill.
 metadata:
   created: '2026-10-26'
-  updated: '2026-10-27'
+  updated: '2026-10-29'
 ---
 
-# Repository Policy Linter setup
+# Repository Policy Linter setup and instruction migration
 
-Project source: [Belkin-digital/repository-policy-linter](https://github.com/Belkin-digital/repository-policy-linter).
-The [upstream skill folder](https://github.com/Belkin-digital/repository-policy-linter/tree/main/skills/repo-policy-setup)
-contains this skill and its helpers. Use the project's
-[build and installation instructions](https://github.com/Belkin-digital/repository-policy-linter/blob/main/README.md)
-to obtain the engine separately. For registry installation, verify the selected version on the
-official [PyPI project](https://pypi.org/project/repository-policy-linter/) and its source URLs;
-a source repository alone does not establish that a version has been published.
+Work in the repository selected by the user. Infer the requested outcome from the task and
+existing decisions; do not require another approval for work already authorized:
 
-Work only in the repository selected by the user. Installing this skill does not authorize
-changing other repositories. The engine is an external, versioned dependency; never copy
-`src/repo_policy` into the target or invent a published package/remote URL.
+- **Install/update:** resolve an external engine, configure the selected policy and integrate
+  its runtime and commands. A complete instruction audit or document rewrite is additional work.
+- **Migrate rules:** also inventory normative sources and artifact roles, implement the provable
+  checks, adopt existing data deliberately and report every uncovered requirement.
+- **Continue an installation:** reuse its current receipts and accepted decisions; inspect the
+  changed scope instead of restarting the entire migration.
 
-For every proposed check or rule, first ask whether the linter can enforce it reasonably,
-reliably and simply. If yes, implement it in the shared policy/engine, using existing tools
-where appropriate. Always obtain explicit user approval before implementing new rubric checks,
-changing their criteria or expanding coverage/triggers: explain scope, frequency and review cost.
-Run existing rubric checks only within their approved scope. Read
-[rule design and portable guidance](references/rule-design.md) when translating agent instructions
-into policy, and carry these principles into the target's maintained AGENTS/CLAUDE instructions.
-This skill is self-contained; the target agent does not need this project's root `AGENTS.md`.
+Engine installation, rule coverage, conformity of the artifact collection, instruction delivery,
+CI success and rubric acceptance are separate results. A green starter policy proves only its
+enabled checks. This skill is self-contained; the upstream root AGENTS is not a prerequisite.
 
-1. Read applicable `AGENTS.md`, `CLAUDE.md`, contribution rules and existing dependency,
-   pre-commit and CI configuration. Inspect Git status; preserve unrelated edits, comments,
-   YAML anchors and symlinks. Determine the repository root explicitly.
-2. Resolve an available immutable engine distribution: a published exact version, or an
-   approved wheel/artifact URL with SHA-256. For a version not yet published, use the built wheel
-   from the [source repository](https://github.com/Belkin-digital/repository-policy-linter)
-   at a recorded commit SHA. Keep the distribution accessible to both local and platform
-   execution; a `file://` URL is a local pilot, not a portable platform installation.
-3. Use [scripts/configure.py](scripts/configure.py) with `--root` and `--engine` to preview
-   changes (default is dry-run), then `--apply` to create the `.repo-policy/policy.yaml`
-   version-2 manifest, common registry and `.repo-policy/requirements.txt` pin. Existing bundles
-   and dependency files are preserved byte-for-byte; reconcile differences directly. The helper
-   does not inject undeclared modules into an existing bundle. Use `--instructions`
-   only when adding a short managed section to the existing instruction file is appropriate.
-   The helper neither installs packages nor changes hooks, commits, pushes or global settings.
-4. Install the dependency through the repository's existing dev-tool manager, or an isolated
-   environment. For a generic repository:
-   `python3 -m venv .venv-policy`, then `.venv-policy/bin/python -m pip install -r .repo-policy/requirements.txt`.
-   On Windows use `.venv-policy\Scripts\python.exe`. Add this environment to existing ignore
-   rules. When using a lock manager, resolve and commit its lock. Avoid global installation.
-5. Start with `.repo-policy/policy.yaml`; configure only policies supported by actual repository
-   conventions. Use existing specialized tools for syntax/style/domain semantics (Ruff,
-   markdownlint, yamllint, Spectral, ESLint, etc.), with pinned versions and read-only commands.
-   Generic text rules are not semantic validators. Read [references/integration.md](references/integration.md)
-   for plugin trust, pre-commit, CI and AF migration. Review commands before `--allow-plugins`.
-   If enabling Markdown reachability, use the `[markdown]` package extra and choose only
-   existing repository-local entrypoints; follow the navigation guidance in that reference.
-   Read [references/contracts.md](references/contracts.md) when adding thematic registries,
-   artifact contracts (including `when.frontmatter` selection), same-ID explanations, scope
-   navigation or repository-specific Python checks.
-   The engine always validates policy structure, IDs and navigation; do not configure copies
-   of its `system-*` checks. There is no legacy root-config discovery.
-   Use repository-scoped plugins for deterministic checks spanning multiple files or required
-   metadata, including empty/deletion-only selections. With engine 0.4.0+, use frontmatter
-   `preserve_keys` when the repository requires immutable creation metadata and has local history.
-6. Integrate with existing pre-commit/CI by a small targeted merge; never replace their files.
-   Run the same check locally and in CI; keep hooks check-only. Preserve AGENTS/CLAUDE linking
-   conventions (including generated `.claude` files); add one short invocation reference at
-   the maintained source, rather than competing policy text in several files.
-   Existing managed instruction blocks are preserved by the helper; inspect them and merge
-   the universal design/approval guidance when updating an already configured target.
-7. Run `repo-policy check --all`, then `repo-policy check --changed`; use `--format json` for
-   automation. Run repository-mandated tests and the affected CI/pre-commit checks. Establish
-   an initial report before changing policies to avoid a sudden unreviewed enforcement gate.
-   `fix --dry-run` previews; `fix` only appends final newlines for opted-in rules. Never run
-   tool auto-fixes under the guise of safe engine fixes.
-8. For rubric contracts read [references/reviews.md](references/reviews.md) and add the handoff
-   instructions to the maintained root AGENTS/CLAUDE source. The current harness owns subagent
-   dispatch, hash-matched verdicts and repair iterations. Review every `review_requests` entry;
-   machine exit 0 alone does not establish acceptance. Use `--commit <SHA>` for committed inputs.
+## Read by stage
 
-Report files changed, dependency source/version, diagnostics, tests, and any remaining
-platform portability gaps. Repeating setup must not duplicate sections or overwrite policy.
-For AF retain exactly the same policy, engine, tool locks and selection; change execution
-transport only. No platform SkillVersion/Resource/AgentVersion exists until AF Core persisted it.
+1. [Discovery and rule design](references/rule-design.md): establish scope, dirty-state baseline,
+   artifact classes, normative sources, required inputs and engine capabilities. Installation-only
+   needs the relevant setup conventions, not a full coverage catalog.
+2. [Runtime and integration](references/integration.md): resolve a real distribution, preview
+   [configure.py](scripts/configure.py), install the external dependency and merge integrations.
+   Use [contracts](references/contracts.md) for actual schema, selectors and ID navigation.
+3. [Acceptance and handoff](references/acceptance.md): select meaningful verification, preserve
+   real exit codes, separate unresolved queues and leave one current receipt.
+
+Read conditional guidance before the corresponding work:
+
+- [Data preservation and adoption](references/data-preservation.md) before generator writes,
+  historical backfill, baseline changes or edits to originals and published results.
+- [Instruction migration and navigation](references/instruction-migration.md) when moving a
+  canonical source, syncing mirrors or changing document reachability.
+- [Language policies](references/language-policy.md) for lexical checks or editorial migration.
+- [Rule library](references/rule-library.md) for optional candidates and tested examples.
+  Select rules from the project's own conventions; examples are never enabled automatically.
+- [Rubric handoff](references/reviews.md) only for already-approved review obligations or an
+  explicitly authorized rubric stage. The helper's `--rubric-handoff` delivers full instructions
+  for that stage; the flag does not authorize criteria, reviewers or new automatic triggers.
+
+## Boundaries
+
+For every new rule ask whether the linter can enforce it reasonably, reliably and simply.
+Prefer built-ins, existing specialist tools and small repository adapters. State the narrow fact
+proved and its limits; a word, hash, status or self-written `approved` field is not evidence of
+meaning, ownership, permission or completed work. Keep process obligations in maintained
+instructions when no reliable check exists.
+
+Preserve unrelated edits, bytes, modes, symlinks, native schemas, historical results and local
+configuration. Check-mode does not generate, fix, stage, refresh baselines or synchronize copies.
+Inspect a diagnostic's applicability before changing dates, types, audience, facts or verdicts.
+Use accepted decisions for the same proposed delta; ask only about a genuinely new decision.
+
+Always obtain user approval before new rubric checks, changed criteria or expanded coverage,
+triggers or recurring cost. Explain the scope, frequency and expected cost, or say it is unmeasured.
+Uncovered semantic requirements do not automatically become rubric checks. Existing requests
+remain pending until their approved harness workflow completes; machine exit 0 is insufficient.
+
+Keep the engine an external dependency; never copy `src/repo_policy` into the target. A skill
+update does not itself authorize an engine upgrade, another repository's publication, platform
+objects or a new blocking gate. Respect explicit constraints on tests, network, writes and review.
+Prepare a concrete diff/destination before asking for missing authority; continue independent work.
+
+## Distribution and compatibility
+
+Official [source](https://github.com/Belkin-digital/repository-policy-linter),
+[skill folder](https://github.com/Belkin-digital/repository-policy-linter/tree/main/skills/repo-policy-setup)
+and [PyPI project](https://pypi.org/project/repository-policy-linter/) identify this project.
+Record engine version, source commit and available distribution separately. Verify a selected
+version and its source URLs; a source version or link to `main` does not establish publication.
+
+Use the selected distribution's documentation and CLI. Do not configure a capability from a
+draft branch as if it were released. A `file://` wheel is a local pilot; a reproducible cold path
+must obtain the declared distribution without the installer's existing clone or editable package.
+The helper validates requirement syntax and scaffolds files; it performs no download, install,
+hook registration, commit, push, CI or review. Reconcile every reported mismatch explicitly.

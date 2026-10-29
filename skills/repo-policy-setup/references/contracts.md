@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Bundle configuration and contract navigation
@@ -60,6 +60,9 @@ contract/rubric edits include all currently matching artifacts. Keep uncondition
 of required tags and allowed artifact types when removing a tag must not disable obligations.
 Pin a build that supports `when`; older builds reject it. Do not invent nested lookups or
 expression syntax. Keep existing path selectors and navigation entrypoints alongside conditions.
+The [optional rule library](rule-library.md#classification-before-conditional-contracts) includes
+a runnable unconditional type guard and conditional contract; adapt its canonical types and paths
+to the project before enabling it. A conditional contract alone cannot reject its own missing tag.
 
 Merge `repo_policy_contracts: [specification]` into the frontmatter of each declared scope
 entrypoint, using an existing `README.md` or `AGENTS.md` at the scope root. Add local Markdown

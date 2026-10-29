@@ -1,0 +1,4 @@
+version: 2
+registries: [.repo-policy/checks/specifications.yaml]
+checks: [example-specification-type]
+contracts: [.repo-policy/contracts/example-specification.yaml]

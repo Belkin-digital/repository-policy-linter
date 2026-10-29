@@ -1,0 +1,18 @@
+version: 2
+rules:
+  - id: example-document-dates
+    kind: frontmatter
+    files: ['docs/*.md']
+    exclude: ['docs/raw/**', 'docs/releases/**']
+    keys: [created, updated]
+    preserve_keys: [created]
+  - id: example-native-skill-metadata
+    kind: frontmatter
+    files: ['skills/**/SKILL.md', '.agents/skills/**/SKILL.md']
+    keys: [name, description]
+  - id: example-native-skill-dates
+    kind: frontmatter
+    files: ['skills/**/SKILL.md', '.agents/skills/**/SKILL.md']
+    mapping_path: [metadata]
+    keys: [created, updated]
+    preserve_keys: [created]

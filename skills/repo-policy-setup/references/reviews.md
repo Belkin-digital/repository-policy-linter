@@ -1,6 +1,6 @@
 ---
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Rubric review handoff for the current harness
@@ -9,6 +9,19 @@ Before implementing new rubric checks, changing criteria or expanding coverage/a
 triggers, always obtain user approval after explaining scope, frequency and expected review
 cost. First consider simple reliable machine enforcement, following [rule design](rule-design.md).
 This protocol executes existing approved obligations; it does not authorize creating new ones.
+
+Installation, rule design and artifact repair do not automatically authorize rubric. Keep a
+script-only stage free of new rubric contracts/reviewer tasks. A proposal may name candidates,
+but approval to design criteria and approval to run them can be different scopes. Record real
+scope, triggers, expected task count/context, recurring cost (or its unmeasured status), reuse
+conditions and effect on local/CI acceptance. Use already-approved decisions without asking again;
+present only a changed criterion/scope/frequency/cost delta when further authority is needed.
+
+`configure.py --rubric-handoff --instructions AGENTS.md` delivers the full protocol for an approved
+stage; it creates no review contracts. Existing managed blocks remain preserved for deliberate
+merge. If the current harness lacks an authorized reviewer or delegation tools, report the
+obligations as pending/blocked rather than fabricating independent review. Start new approved
+rollouts with a scoped pilot and an agreed cost/iteration bound, not a repository-wide quality sweep.
 
 Use `repo-policy check --commit <SHA> --format json` to check a committed change. It reads the
 exact local Git snapshot and compares it with the first parent; the initial commit selects all
